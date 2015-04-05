@@ -6,6 +6,7 @@ version      := "0.0.1-SNAPSHOT"
 libraryDependencies ++= Seq(
   "org.scalaz"  %% "scalaz-core"       % "7.1.1" ,
   "org.scalaz"  %% "scalaz-effect"     % "7.1.1" ,
+  "org.scalaz"  %% "scalaz-iteratee"   % "7.1.1" ,
   "org.scalaz"  %% "scalaz-concurrent" % "7.1.1" ,
 
   "org.http4s"  %% "http4s-dsl"         % "0.6.5" ,
