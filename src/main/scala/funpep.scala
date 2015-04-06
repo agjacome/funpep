@@ -6,6 +6,7 @@ import java.nio.file.{ Files, Path, Paths }
 import java.util.UUID
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.sys.process.Process
 
 import scalaz._
 import scalaz.Scalaz._
@@ -60,5 +61,8 @@ package object funpep {
     CaseInsensitive(s)
 
   def uuid: UUID = UUID.randomUUID
+
+  def execute(command: String, args: String*): IO[Throwable \/ String] =
+    Process(command, args).point[IO].map(_.!!).catchLeft
 
 }
