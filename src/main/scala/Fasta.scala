@@ -16,12 +16,10 @@ object FastaEntry extends ((String, CaseInsensitive[String]) ⇒ FastaEntry) {
 
   type ID = String
 
-  implicit val equal = new Equal[FastaEntry] {
+  implicit val FastaEntryInstances = new Equal[FastaEntry] with Show[FastaEntry] {
     override def equal(e1: FastaEntry, e2: FastaEntry): Boolean =
       e1.seq ≟ e2.seq
-  }
 
-  implicit val show = new Show[FastaEntry] {
     override def show(e: FastaEntry): Cord =
       Cord(">", e.id, ¶, e.seq.original grouped 70 mkString ¶)
   }
@@ -34,7 +32,10 @@ object Fasta extends (NonEmptyList[FastaEntry] ⇒ Fasta) {
 
   import Cord.mkCord
 
-  implicit val show = new Show[Fasta] {
+  def apply(e: FastaEntry, es: FastaEntry*): Fasta =
+    new Fasta(NonEmptyList(e, es: _*))
+
+  implicit val FastaInstances = new Show[Fasta] {
     override def show(f: Fasta): Cord =
       mkCord(¶, f.entries map (_.show) toList: _*)
   }
@@ -52,25 +53,22 @@ object FastaParser extends RegexParsers {
   lazy val entry = header ~ sequence ^^ { e ⇒ FastaEntry(e._1, e._2) }
   lazy val fasta = entry.+           ^^ { f ⇒ f.toNel map Fasta      }
 
-  val parseString: String         ⇒ ParseResult[Option[Fasta]] = parseAll(fasta, _)
-  val parseReader: BufferedReader ⇒ ParseResult[Option[Fasta]] = parseAll(fasta, _)
+  lazy val parseString: String         ⇒ ParseResult[Option[Fasta]] = parseAll(fasta, _)
+  lazy val parseReader: BufferedReader ⇒ ParseResult[Option[Fasta]] = parseAll(fasta, _)
 
-  val validate: ParseResult[Option[Fasta]] ⇒ Parsed[Fasta] =
-    _.getOrElse(None) \/> new Throwable("Could not parse content as FASTA")
+  lazy val fromString: String         ⇒ Parsed[Fasta] = parseString ∘ validate
+  lazy val fromReader: BufferedReader ⇒ Parsed[Fasta] = parseReader ∘ validate
 
-  val fromReader: BufferedReader ⇒ IO[Parsed[Fasta]] =
-    (parseReader ∘ validate)(_).point[IO].catchLeft map (_.join)
+  def fromFile(file: Path): IO[Parsed[Fasta]] =
+    file.openIOReader.bracket(_.closeIO)(r ⇒ fromReader(r).point[IO]).catchLeft map (_.join)
 
-  val fromFile: Path ⇒ IO[Parsed[Fasta]] =
-    _.openIOReader.bracket(_.closeIO)(fromReader)
-
-  val fromString: String ⇒ Parsed[Fasta] =
-    parseString ∘ validate
-
-  val fromDirectory: Path ⇒ IO[Parsed[List[Fasta]]] =
-    _.files("*.{fasta,fas,fna,faa,ffn,frna}") >>= {
+  def fromDirectory(directory: Path): IO[Parsed[List[Fasta]]] =
+    directory.files("*.{fasta,fas,fna,faa,ffn,frna}") >>= {
       _.map(fromFile).sequence map (_.sequenceU)
     }
+
+  private def validate(res: ParseResult[Option[Fasta]]): Parsed[Fasta] =
+    res.getOrElse(None) \/> new IllegalArgumentException("Could not parse content as FASTA")
 
 }
 
