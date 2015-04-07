@@ -23,7 +23,7 @@ object Config {
 object ConfigParser {
 
   // TODO: move to top-level, call fromFile there
-  val file: Path = path"${ System.getProperty("config.file", resource("config.json").getPath) }"
+  val file: Path = System.getProperty("config.file", resource("config.json").getPath).toPath
 
   def fromString(str: String): Parsed[Config] =
     str.decodeEither[Config] leftMap { err ⇒ new RuntimeException(err) }

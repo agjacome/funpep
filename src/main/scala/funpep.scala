@@ -3,9 +3,8 @@ package es.uvigo.ei.sing
 import java.io.{ BufferedReader, BufferedWriter }
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.{ Files, Path, Paths }
-import java.util.UUID
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.collection.JavaConverters._
 import scala.sys.process.Process
 
 import scalaz._
@@ -39,7 +38,8 @@ package object funpep {
   }
 
   implicit class PathOps(val path: Path) extends AnyVal {
-    def /(p: Path): Path = path.resolve(p)
+    def /(p: Path  ): Path = path.resolve(p)
+    def +(s: String): Path = Paths.get(path.toString + s)
 
     def openIOReader: IO[BufferedReader] = Files.newBufferedReader(path, UTF_8).point[IO]
     def openIOWriter: IO[BufferedWriter] = Files.newBufferedWriter(path, UTF_8).point[IO]
@@ -60,6 +60,10 @@ package object funpep {
     }
   }
 
+  implicit class StringOps(val str: String) extends AnyVal {
+    def toPath: Path = Paths.get(str)
+  }
+
   implicit class PathInterpolator(val sc: StringContext) extends AnyVal {
     def path(args: Any*): Path = Paths.get(sc.s(args: _*))
   }
@@ -67,7 +71,7 @@ package object funpep {
   implicit def stringToCaseInsensitive(str: String): CaseInsensitive[String] =
     CaseInsensitive(str)
 
-  def uuid: UUID = UUID.randomUUID
+  def uuid: String = java.util.UUID.randomUUID.toString
 
   def execute(command: String, args: String*): IO[Throwable \/ String] =
     Process(command, args).point[IO].map(_.!!).catchLeft

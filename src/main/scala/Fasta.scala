@@ -83,7 +83,7 @@ object FastaPrinter {
     file.openIOWriter.bracket(_.closeIO) { toWriter(_)(fasta).point[IO] }
 
   def toNewFile(directory: Path)(fasta: ⇒ Fasta): IO[Printed] =
-    toFile(directory / path"$uuid.fasta")(fasta)
+    toFile(directory / uuid.toPath + ".fasta")(fasta)
 
   def toDirectory(directory: Path)(fastas: ⇒ List[Fasta]): IO[Printed] =
     fastas.map(f ⇒ toNewFile(directory)(f)).sequence map {
