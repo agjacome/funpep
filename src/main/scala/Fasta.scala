@@ -7,7 +7,7 @@ import scala.util.parsing.combinator.RegexParsers
 
 import scalaz._
 import scalaz.Scalaz._
-import scalaz.effect._
+import scalaz.effect.IO
 
 
 final case class FastaEntry (id: FastaEntry.ID, seq: CaseInsensitive[String])
@@ -44,8 +44,6 @@ object Fasta extends (NonEmptyList[FastaEntry] ⇒ Fasta) {
 
 object FastaParser extends RegexParsers {
 
-  type Parsed[A] = Throwable \/ A
-
   lazy val header   = """>.*""".r    ^^ { _.tail.trim }
   lazy val seqLine  = """[^>].*""".r ^^ { _.trim      }
   lazy val sequence = seqLine.+      ^^ { _.mkString  }
@@ -74,19 +72,21 @@ object FastaParser extends RegexParsers {
 
 object FastaPrinter {
 
+  import scalaz.\/.{ fromTryCatchThrowable ⇒ tryCatch }
+
   type Printed = Throwable \/ Unit
 
-  def toWriter(fasta: ⇒ Fasta): BufferedWriter ⇒ IO[Printed] =
-    _.writeIO(fasta.shows).catchLeft
+  lazy val toWriter: BufferedWriter ⇒ Fasta ⇒ Printed =
+    writer ⇒ fasta ⇒ tryCatch[Unit, Throwable] { writer.write(fasta.shows) }
 
-  def toFile(fasta: ⇒ Fasta): Path ⇒ IO[Printed] =
-    _.openIOWriter.bracket(_.closeIO)(toWriter(fasta))
+  def toFile(file: Path)(fasta: ⇒ Fasta): IO[Printed] =
+    file.openIOWriter.bracket(_.closeIO) { toWriter(_)(fasta).point[IO] }
 
-  def toNewFile(fasta: ⇒ Fasta)(dir: Path): IO[Printed] =
-    toFile(fasta)(dir / path"$uuid.fasta")
+  def toNewFile(directory: Path)(fasta: ⇒ Fasta): IO[Printed] =
+    toFile(directory / path"$uuid.fasta")(fasta)
 
-  def toDirectory(fastas: ⇒ List[Fasta])(dir: Path): IO[Printed] =
-    fastas.map(toNewFile(_)(dir)).sequence map {
+  def toDirectory(directory: Path)(fastas: ⇒ List[Fasta]): IO[Printed] =
+    fastas.map(f ⇒ toNewFile(directory)(f)).sequence map {
       _.sequenceU map (_ => ())
     }
 
