@@ -17,6 +17,8 @@ import scalaz.iteratee.Iteratee._
 
 package object funpep {
 
+  type Parsed[A] = Throwable \/ A
+
   lazy val ¶ = System.lineSeparator
 
   implicit class BufferedReaderOps(val reader: BufferedReader) extends AnyVal {
@@ -24,10 +26,10 @@ package object funpep {
     def readLineIO: IO[Option[String]] = Option(reader.readLine).point[IO]
 
     def enumerateLines: EnumeratorT[IoExceptionOr[String], IO] =
-      enumIoSource(
-        get     = () ⇒ IoExceptionOr { Option(reader.readLine) },
-        gotdata = (l: IoExceptionOr[Option[String]]) ⇒ l exists (_.isDefined),
-        render  = (l: Option[String]) ⇒ l.err("Unexpected error while reading line")
+      enumIoSource[Option[String], String, IO](
+        get     = ()   ⇒ IoExceptionOr { Option(reader.readLine) },
+        gotdata = line ⇒ line.exists(_.isDefined),
+        render  = line ⇒ line.err("Unexpected error while reading line")
       )
   }
 
@@ -45,6 +47,11 @@ package object funpep {
     def enumerateLines[A](action: IterateeT[IoExceptionOr[String], IO, A]): IO[A] =
       openIOReader.bracket(_.closeIO) { reader ⇒ (action &= reader.enumerateLines).run }
 
+    def contentsAsString: IO[Option[String]] =
+      enumerateLines(consume[IoExceptionOr[String], IO, List]) map {
+        _ traverse (_.toOption) map (_ mkString ¶)
+      }
+
     def files(glob: String): IO[List[Path]] = {
       val stream = Files.newDirectoryStream(path, glob)
       stream.point[IO].bracket(_.close.point[IO]) {
@@ -57,12 +64,17 @@ package object funpep {
     def path(args: Any*): Path = Paths.get(sc.s(args: _*))
   }
 
-  implicit def stringToCaseInsensitive(s: String): CaseInsensitive[String] =
-    CaseInsensitive(s)
+  implicit def stringToCaseInsensitive(str: String): CaseInsensitive[String] =
+    CaseInsensitive(str)
 
   def uuid: UUID = UUID.randomUUID
 
   def execute(command: String, args: String*): IO[Throwable \/ String] =
     Process(command, args).point[IO].map(_.!!).catchLeft
+
+  def resource(resource: String): java.net.URL =
+    Option(Thread.currentThread.getContextClassLoader) err {
+      "Context classloader is not set for the current thread."
+    } getResource resource
 
 }
