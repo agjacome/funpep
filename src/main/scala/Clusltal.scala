@@ -5,16 +5,18 @@ import java.nio.file.Path
 import scalaz._
 import scalaz.effect.IO
 
+import Config._
 
 object Clustal {
 
-  // TODO: this should be configurable, not hard-coded
-  lazy val clustalo = "/usr/bin/clustalo"
+  def distanceMatrix(input: Path, alignment: Path, distmat: Path): Configured[IO[Throwable \/ String]] =
+    withConfig { config ⇒
+      execute(config.clustalo.toString, s"-i $input -o $alignment --distmat-out=$distmat --percent-id --full --force")
+    }
 
-  def distanceMatrix(input: Path, alignment: Path, distmat: Path): IO[Throwable \/ String] =
-    execute(clustalo, s"-i $input", s"-o $alignment", "--percent-id", "--full", s"--distmat-out=$distmat", "--force")
-
-  def guideTree(input: Path, alignment: Path, tree: Path): IO[Throwable \/ String] =
-    execute(clustalo, s"-i $input", s"-o $alignment", "--full", s"--guidetree-out=$tree", "--force")
+  def guideTree(input: Path, alignment: Path, tree: Path): Configured[IO[Throwable \/ String]] =
+    withConfig { config ⇒
+      execute(config.clustalo.toString, s"-i $input -o $alignment --guidetree-out=$tree --full --force")
+    }
 
 }
