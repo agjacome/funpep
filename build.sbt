@@ -45,7 +45,7 @@ scalacOptions in (Compile, console) ~= { _ filterNot Set(
   "-Xfatal-warnings", "-Ywarn-unused-import"
 )}
 
-wartremoverWarnings ++= Warts.allBut(Wart.NoNeedForMonad)
+wartremoverWarnings ++= Warts.all
 
 initialCommands in console := """
   |import scalaz._

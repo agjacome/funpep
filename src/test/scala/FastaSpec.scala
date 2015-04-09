@@ -1,50 +1,56 @@
 package es.uvigo.ei.sing.funpep
 
-import scalaz._
 import scalaz.Scalaz._
 import scalaz.scalacheck.ScalazProperties._
 
-import org.scalacheck.Prop, Prop.{ forAll ⇒ ∀ }
+import org.scalacheck.Prop
 
 class `FastaEntry Specification` extends BaseSpec { def is = s2"""
  
   satisfies equality laws (Equal[FastaEntry]):
-    commutative ${ equal.commutativity[FastaEntry] }
-    reflexive   ${ equal.reflexive[FastaEntry]     }
-    transitive  ${ equal.transitive[FastaEntry]    }
+    commutative $testEqualCommutative
+    reflexive   $testEqualReflexive
+    transitive  $testEqualTransitive
 
   can be presented as a String (Show[FastaEntry]) $testShowInstance
 
 """
 
-  def testShowInstance: Prop = ∀ {
-    (entry: FastaEntry) ⇒ Show[FastaEntry].shows(entry) ≟ entryToString(entry)
-  }
+  def testEqualCommutative: Prop = equal.commutativity[FastaEntry]
+  def testEqualReflexive:   Prop = equal.reflexive[FastaEntry]
+  def testEqualTransitive:  Prop = equal.transitive[FastaEntry]
 
-  val entryToString: FastaEntry ⇒ String =
-    entry ⇒ ">" + entry.id + ¶ + entry.seq.original.grouped(70).mkString(¶)
+  def testShowInstance: Prop = ∀[FastaEntry] { e ⇒ e.shows ≟ entryToString(e) }
+
+  private def entryToString(entry: FastaEntry): String =
+    ">" + entry.id + ¶ + entry.seq.original.grouped(70).mkString(¶)
 
 }
 
 class `Fasta Specification` extends BaseSpec { def is = s2"""
   
   satisfies equality laws (Equal[Fasta]):
-    commutative ${ equal.commutativity[Fasta] }
-    reflexive   ${ equal.reflexive[Fasta]     }
-    transitive  ${ equal.transitive[Fasta]    }
+    commutative $testEqualCommutative
+    reflexive   $testEqualReflexive
+    transitive  $testEqualTransitive
 
   satisfies semigroup laws (Semigroup[Fasta]):
-    associative ${ semigroup.associative[Fasta] }
+    associative $testSemigroupAssociative
 
   can be presented as a String (Show[Fasta]) $testShowInstance
 
 """
 
-  val fastaToString: Fasta ⇒ String =
-    fasta ⇒ fasta.entries.map(_.shows).toList.mkString(¶)
+  def testEqualCommutative: Prop = equal.commutativity[Fasta]
+  def testEqualReflexive:   Prop = equal.reflexive[Fasta]
+  def testEqualTransitive:  Prop = equal.transitive[Fasta]
 
-  def testShowInstance: Prop = ∀ {
-    (fasta: Fasta) ⇒ Show[Fasta].shows(fasta) ≟ fastaToString(fasta)
-  }
+  def testSemigroupAssociative: Prop = semigroup.associative[Fasta]
+
+  def testShowInstance: Prop = ∀[Fasta] { f ⇒ f.shows ≟ fastaToString(f) }
+
+  private def fastaToString(fasta: Fasta): String =
+    fasta.entries.map(_.shows).toList.mkString(¶)
+
 
 }
