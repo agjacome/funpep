@@ -13,8 +13,11 @@ libraryDependencies ++= Seq(
   "org.http4s"  %% "http4s-blazeserver" % "0.6.5" ,
   "org.http4s"  %% "http4s-argonaut"    % "0.6.5" ,
 
-  "org.specs2"     %% "specs2-core" % "3.3.1"  % "test",
-  "org.scalacheck" %% "scalacheck"  % "1.12.2" % "test"
+  "org.scalacheck" %% "scalacheck"  % "1.11.6" % "test" ,
+  "org.specs2"     %% "specs2-core" % "3.4"    % "test" ,
+
+  "org.scalaz"     %% "scalaz-scalacheck-binding" % "7.1.1"  % "test" exclude("org.scalacheck", "scalacheck_2.11") ,
+  "org.specs2"     %% "specs2-scalacheck"         % "3.4"    % "test" exclude("org.scalacheck", "scalacheck_2.11")
 )
 
 resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
@@ -42,7 +45,7 @@ scalacOptions in (Compile, console) ~= { _ filterNot Set(
   "-Xfatal-warnings", "-Ywarn-unused-import"
 )}
 
-wartremoverWarnings ++= Warts.all
+wartremoverWarnings ++= Warts.allBut(Wart.NoNeedForMonad)
 
 initialCommands in console := """
   |import scalaz._

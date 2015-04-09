@@ -35,9 +35,15 @@ object Fasta extends (NonEmptyList[FastaEntry] ⇒ Fasta) {
   def apply(e: FastaEntry, es: FastaEntry*): Fasta =
     new Fasta(NonEmptyList(e, es: _*))
 
-  implicit val FastaInstances = new Show[Fasta] {
+  implicit val FastaInstances = new Equal[Fasta] with Show[Fasta] with Semigroup[Fasta] {
+    override def equal(f1: Fasta, f2: Fasta): Boolean =
+      f1.entries ≟ f2.entries
+
     override def show(f: Fasta): Cord =
       mkCord(¶, f.entries map (_.show) toList: _*)
+
+    override def append(f1: Fasta, f2: ⇒ Fasta): Fasta =
+      Fasta(f1.entries.append(f2.entries))
   }
 
 }
