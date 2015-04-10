@@ -1,6 +1,10 @@
 package es.uvigo.ei.sing.funpep
 
+import java.io.{ BufferedReader, StringReader }
+import java.nio.file.{ Files, Path }
+
 import scalaz.Scalaz._
+import scalaz.effect.IO
 import scalaz.scalacheck.ScalazProperties._
 
 
@@ -15,11 +19,11 @@ class `FastaEntry Specification` extends BaseSpec { def is = s2"""
 
 """
 
-  lazy val testEqualCommutative = equal.commutativity[FastaEntry]
-  lazy val testEqualReflexive   = equal.reflexive[FastaEntry]
-  lazy val testEqualTransitive  = equal.transitive[FastaEntry]
+  def testEqualCommutative = equal.commutativity[FastaEntry]
+  def testEqualReflexive   = equal.reflexive[FastaEntry]
+  def testEqualTransitive  = equal.transitive[FastaEntry]
 
-  lazy val testShowInstance = ∀[FastaEntry] { e ⇒ e.shows ≟ entryToString(e) }
+  def testShowInstance = ∀[FastaEntry] { e ⇒ e.shows ≟ entryToString(e) }
 
   private def entryToString(entry: FastaEntry): String =
     ">" + entry.id + ¶ + entry.seq.original.grouped(70).mkString(¶)
@@ -40,13 +44,13 @@ class `Fasta Specification` extends BaseSpec { def is = s2"""
 
 """
 
-  lazy val testEqualCommutative = equal.commutativity[Fasta]
-  lazy val testEqualReflexive   = equal.reflexive[Fasta]
-  lazy val testEqualTransitive  = equal.transitive[Fasta]
+  def testEqualCommutative = equal.commutativity[Fasta]
+  def testEqualReflexive   = equal.reflexive[Fasta]
+  def testEqualTransitive  = equal.transitive[Fasta]
 
-  lazy val testSemigroupAssociative = semigroup.associative[Fasta]
+  def testSemigroupAssociative = semigroup.associative[Fasta]
 
-  lazy val testShowInstance = ∀[Fasta] { f ⇒ f.shows ≟ fastaToString(f) }
+  def testShowInstance = ∀[Fasta] { f ⇒ f.shows ≟ fastaToString(f) }
 
   private def fastaToString(fasta: Fasta): String =
     fasta.entries.map(_.shows).toList.mkString(¶)
@@ -55,20 +59,51 @@ class `Fasta Specification` extends BaseSpec { def is = s2"""
 
 class `FastaParser Specification` extends BaseSpec { def is = s2"""
 
-  parses Fastas from Strings $testFromString
-  parses Fastas from Readers $testFromReader
+  can correctly parse FASTAs:
+    from Strings     $testFromString
+    from Readers     $testFromReader
+    from a file      $testFromFile
+    from a directory $testFromDirectory
 
 """
 
-  import java.io.{ BufferedReader, StringReader }
-
-  lazy val testFromString = ∀[Fasta] {
+  def testFromString = ∀[Fasta] {
     fasta ⇒ FastaParser.fromString(fasta.shows).exists(_ ≟ fasta)
   }
 
-  lazy val testFromReader = ∀[Fasta] { fasta ⇒
+  def testFromReader = ∀[Fasta] { fasta ⇒
     val reader = new BufferedReader(new StringReader(fasta.shows))
-    reader.bracket(_.close) { br ⇒ FastaParser.fromReader(br).exists(_ ≟ fasta) }
+    reader.bracket(_.close) {
+      FastaParser.fromReader(_).exists(_ ≟ fasta)
+    }
   }
+
+  def testFromFile = ∀[Fasta] { fasta ⇒
+    val file = newTemporalFile(".fasta")
+
+    lazy val write = writeFasta(file, fasta)
+    lazy val read  = FastaParser.fromFile(file) map {
+      _ exists (_ ≟ fasta)
+    }
+
+    (write *> read).unsafePerformIO
+  }
+
+  def testFromDirectory = ∀[List[Fasta]] { fastas ⇒
+    val directory = newTemporalDirectory()
+
+    lazy val write = fastas map {
+      fasta ⇒ writeFasta(newTemporalFileIn(directory, ".fasta"), fasta)
+    } sequence
+
+    lazy val read = FastaParser.fromDirectory(directory) map {
+      _ exists { _.filterNot(fastas.contains[Fasta]).size == 0 }
+    }
+
+    (write *> read).unsafePerformIO
+  }
+
+  private def writeFasta(file: Path, fasta: Fasta): IO[Unit] =
+    file.openIOWriter.bracket(_.closeIO)(_.writeIO(fasta.shows))
 
 }
