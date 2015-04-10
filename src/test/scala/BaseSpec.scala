@@ -13,8 +13,12 @@ trait Arbitraries {
   import scalaz.scalacheck.ScalaCheckBinding._
 
   import Arbitrary.arbitrary
+  import Gen.{ alphaChar, nonEmptyListOf }
 
-  val genFastaEntry = (arbitrary[String] |@| arbitrary[CaseInsensitive[String]])(FastaEntry)
+  val nonEmptyStr   = nonEmptyListOf(alphaChar).map(_.mkString)
+  val nonEmptyCIStr = nonEmptyStr.map(str ⇒ CaseInsensitive(str))
+
+  val genFastaEntry = (nonEmptyStr |@| nonEmptyCIStr)(FastaEntry)
   val genFasta      = arbitrary[NonEmptyList[FastaEntry]] map Fasta
 
   implicit lazy val arbitraryFastaEntry: Arbitrary[FastaEntry] = Arbitrary(genFastaEntry)

@@ -3,10 +3,9 @@ package es.uvigo.ei.sing.funpep
 import scalaz.Scalaz._
 import scalaz.scalacheck.ScalazProperties._
 
-import org.scalacheck.Prop
 
 class `FastaEntry Specification` extends BaseSpec { def is = s2"""
- 
+
   satisfies equality laws (Equal[FastaEntry]):
     commutative $testEqualCommutative
     reflexive   $testEqualReflexive
@@ -16,11 +15,11 @@ class `FastaEntry Specification` extends BaseSpec { def is = s2"""
 
 """
 
-  def testEqualCommutative: Prop = equal.commutativity[FastaEntry]
-  def testEqualReflexive:   Prop = equal.reflexive[FastaEntry]
-  def testEqualTransitive:  Prop = equal.transitive[FastaEntry]
+  lazy val testEqualCommutative = equal.commutativity[FastaEntry]
+  lazy val testEqualReflexive   = equal.reflexive[FastaEntry]
+  lazy val testEqualTransitive  = equal.transitive[FastaEntry]
 
-  def testShowInstance: Prop = ∀[FastaEntry] { e ⇒ e.shows ≟ entryToString(e) }
+  lazy val testShowInstance = ∀[FastaEntry] { e ⇒ e.shows ≟ entryToString(e) }
 
   private def entryToString(entry: FastaEntry): String =
     ">" + entry.id + ¶ + entry.seq.original.grouped(70).mkString(¶)
@@ -28,7 +27,7 @@ class `FastaEntry Specification` extends BaseSpec { def is = s2"""
 }
 
 class `Fasta Specification` extends BaseSpec { def is = s2"""
-  
+
   satisfies equality laws (Equal[Fasta]):
     commutative $testEqualCommutative
     reflexive   $testEqualReflexive
@@ -41,16 +40,35 @@ class `Fasta Specification` extends BaseSpec { def is = s2"""
 
 """
 
-  def testEqualCommutative: Prop = equal.commutativity[Fasta]
-  def testEqualReflexive:   Prop = equal.reflexive[Fasta]
-  def testEqualTransitive:  Prop = equal.transitive[Fasta]
+  lazy val testEqualCommutative = equal.commutativity[Fasta]
+  lazy val testEqualReflexive   = equal.reflexive[Fasta]
+  lazy val testEqualTransitive  = equal.transitive[Fasta]
 
-  def testSemigroupAssociative: Prop = semigroup.associative[Fasta]
+  lazy val testSemigroupAssociative = semigroup.associative[Fasta]
 
-  def testShowInstance: Prop = ∀[Fasta] { f ⇒ f.shows ≟ fastaToString(f) }
+  lazy val testShowInstance = ∀[Fasta] { f ⇒ f.shows ≟ fastaToString(f) }
 
   private def fastaToString(fasta: Fasta): String =
     fasta.entries.map(_.shows).toList.mkString(¶)
 
+}
+
+class `FastaParser Specification` extends BaseSpec { def is = s2"""
+
+  parses Fastas from Strings $testFromString
+  parses Fastas from Readers $testFromReader
+
+"""
+
+  import java.io.{ BufferedReader, StringReader }
+
+  lazy val testFromString = ∀[Fasta] {
+    fasta ⇒ FastaParser.fromString(fasta.shows).exists(_ ≟ fasta)
+  }
+
+  lazy val testFromReader = ∀[Fasta] { fasta ⇒
+    val reader = new BufferedReader(new StringReader(fasta.shows))
+    reader.bracket(_.close) { br ⇒ FastaParser.fromReader(br).exists(_ ≟ fasta) }
+  }
 
 }

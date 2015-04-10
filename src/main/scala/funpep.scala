@@ -30,11 +30,23 @@ package object funpep {
         gotdata = line ⇒ line.exists(_.isDefined),
         render  = line ⇒ line.err("Unexpected error while reading line")
       )
+
+    def bracket[A](after: ⇒ BufferedReader ⇒ Unit)(during: ⇒ BufferedReader ⇒ A): A = {
+      val res = during(reader)
+      after(reader)
+      res
+    }
   }
 
   implicit class BufferedWriterOps(val writer: BufferedWriter) extends AnyVal {
     def closeIO: IO[Unit] = writer.close.point[IO]
     def writeIO(str: String): IO[Unit] = writer.write(str).point[IO]
+
+    def bracket[A](after: ⇒ BufferedWriter ⇒ Unit)(during: ⇒ BufferedWriter ⇒ A): A = {
+      val res = during(writer)
+      after(writer)
+      res
+    }
   }
 
   implicit class PathOps(val path: Path) extends AnyVal {
