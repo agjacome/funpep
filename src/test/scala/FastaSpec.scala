@@ -82,8 +82,8 @@ class `FastaParser Specification` extends BaseSpec { def is = s2"""
     val file = newTemporalFile(".fasta")
 
     lazy val write = writeFasta(file, fasta)
-    lazy val read  = FastaParser.fromFile(file) map {
-      _ exists (_ ≟ fasta)
+    lazy val read  = FastaParser.fromFile(file) exists {
+      _ ≟ fasta
     }
 
     (write *> read).unsafePerformIO
@@ -96,8 +96,8 @@ class `FastaParser Specification` extends BaseSpec { def is = s2"""
       fasta ⇒ writeFasta(newTemporalFileIn(directory, ".fasta"), fasta)
     } sequence
 
-    lazy val read = FastaParser.fromDirectory(directory) map {
-      _ exists { _.filterNot(fastas.contains[Fasta]).size == 0 }
+    lazy val read = FastaParser.fromDirectory(directory) exists {
+      _.filterNot(fastas.contains[Fasta]).size == 0
     }
 
     (write *> read).unsafePerformIO
