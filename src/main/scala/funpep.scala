@@ -1,6 +1,6 @@
 package es.uvigo.ei.sing
 
-import java.io.{ BufferedReader, BufferedWriter }
+import java.io.{ BufferedReader, BufferedWriter, IOException }
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.{ Files, Path, Paths }
 
@@ -16,7 +16,8 @@ import scalaz.iteratee.Iteratee._
 
 package object funpep {
 
-  type Parsed[A] = Throwable \/ A
+  type IoEitherT[A, B] = EitherT[IO, A, B]
+  type ErrorOrIO[A]    = IoEitherT[Throwable, A]
 
   lazy val ¶ = System.lineSeparator
 
@@ -53,22 +54,24 @@ package object funpep {
     def /(p: Path  ): Path = path.resolve(p)
     def +(s: String): Path = Paths.get(path.toString + s)
 
+    def delete: IO[Unit] = Files.deleteIfExists(path).point[IO] map { _ ⇒ () }
+
     def openIOReader: IO[BufferedReader] = Files.newBufferedReader(path, UTF_8).point[IO]
     def openIOWriter: IO[BufferedWriter] = Files.newBufferedWriter(path, UTF_8).point[IO]
 
     def enumerateLines[A](action: IterateeT[IoExceptionOr[String], IO, A]): IO[A] =
       openIOReader.bracket(_.closeIO) { reader ⇒ (action &= reader.enumerateLines).run }
 
-    def contentsAsString: IO[Option[String]] =
-      enumerateLines(consume[IoExceptionOr[String], IO, List]) map {
-        _ traverse (_.toOption) map (_ mkString ¶)
-      }
+    def contentsAsString: ErrorOrIO[String] =
+      EitherT(enumerateLines(consume[IoExceptionOr[String], IO, List]) map {
+        _.traverse(_.toOption).map(_ mkString ¶) \/> new IOException(s"Could not read contents of $path")
+      })
 
-    def files(glob: String): IO[List[Path]] = {
+    def files(glob: String): ErrorOrIO[List[Path]] = {
       val stream = Files.newDirectoryStream(path, glob)
-      stream.point[IO].bracket(_.close.point[IO]) {
+      EitherT(stream.point[IO].bracket(_.close.point[IO]) {
         files ⇒ files.iterator.asScala.toList.point[IO]
-      }
+      } catchLeft)
     }
   }
 
@@ -85,8 +88,8 @@ package object funpep {
 
   def uuid: String = java.util.UUID.randomUUID.toString
 
-  def execute(command: String, args: String*): IO[Throwable \/ String] =
-    Process(command, args).point[IO].map(_.!!).catchLeft
+  def execute(command: String, args: String*): ErrorOrIO[String] =
+    EitherT { Process(command, args).point[IO].map(_.!!).catchLeft }
 
   def resource(resource: String): java.net.URL =
     Option(Thread.currentThread.getContextClassLoader) err {

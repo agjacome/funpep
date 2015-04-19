@@ -14,9 +14,16 @@ final case class Config (clustalo: Path, nullPath: Path)
 
 object Config {
 
-  type Configured[A] = Reader[Config, A]
+  type ConfiguredT[F[_], A] = ReaderT[F, Config, A]
+  type Configured[A]        = ConfiguredT[Id, A]
 
-  def withConfig[A](f: Config ⇒ A): Configured[A] = Reader { f }
+  object ConfiguredT {
+    def apply[F[_], A](f: Config ⇒ F[A]): ConfiguredT[F, A] = Kleisli[F, Config, A](f)
+  }
+
+  object Configured {
+    def apply[A](f: Config ⇒ A): Configured[A] = Kleisli[Id, Config, A](f)
+  }
 
 }
 
@@ -25,13 +32,11 @@ object ConfigParser {
   // TODO: move to top-level, call fromFile there
   val file: Path = System.getProperty("config.file", resource("config.json").getPath).toPath
 
-  def fromString(str: String): Parsed[Config] =
+  def fromString(str: String): Throwable \/ Config =
     str.decodeEither[Config] leftMap { err ⇒ new RuntimeException(err) }
 
-  def fromFile(file: Path): IO[Parsed[Config]] =
-    file.contentsAsString.catchLeft map {
-      _.map(_ map fromString err s"Could not read config contents from $file").join
-    }
+  def fromFile(file: Path): ErrorOrIO[Config] =
+    file.contentsAsString >>= { str ⇒ EitherT(fromString(str).point[IO]) }
 
   implicit def PathDecodeJson: DecodeJson[Path] =
     optionDecoder(_.string.map(str ⇒ path"$str"), "Path")

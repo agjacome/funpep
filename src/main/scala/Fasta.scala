@@ -7,7 +7,7 @@ import scala.util.parsing.combinator.RegexParsers
 
 import scalaz._
 import scalaz.Scalaz._
-import scalaz.effect.IO
+import scalaz.effect._
 
 
 final case class FastaEntry (id: FastaEntry.ID, seq: CaseInsensitive[String])
@@ -26,7 +26,18 @@ object FastaEntry extends ((String, CaseInsensitive[String]) ⇒ FastaEntry) {
 
 }
 
-final case class Fasta (entries: NonEmptyList[FastaEntry])
+final case class Fasta (entries: NonEmptyList[FastaEntry]) {
+
+  def filter(cond: FastaEntry ⇒ Boolean): Option[Fasta] =
+    entries.toList.filter(cond).toNel.map(Fasta)
+
+  def find(cond: FastaEntry ⇒ Boolean): Option[FastaEntry] =
+    entries.toStream.find(cond)
+
+  def exists(cond: FastaEntry ⇒ Boolean): Boolean =
+    entries.toStream.exists(cond)
+
+}
 
 object Fasta extends (NonEmptyList[FastaEntry] ⇒ Fasta) {
 
@@ -60,18 +71,18 @@ object FastaParser extends RegexParsers {
   lazy val parseString: String         ⇒ ParseResult[Option[Fasta]] = parseAll(fasta, _)
   lazy val parseReader: BufferedReader ⇒ ParseResult[Option[Fasta]] = parseAll(fasta, _)
 
-  lazy val fromString: String         ⇒ Parsed[Fasta] = parseString ∘ validate
-  lazy val fromReader: BufferedReader ⇒ Parsed[Fasta] = parseReader ∘ validate
+  lazy val fromString: String         ⇒ Throwable \/ Fasta = parseString ∘ validate
+  lazy val fromReader: BufferedReader ⇒ Throwable \/ Fasta = parseReader ∘ validate
 
-  def fromFile(file: Path): IO[Parsed[Fasta]] =
-    file.openIOReader.bracket(_.closeIO)(r ⇒ fromReader(r).point[IO]).catchLeft map (_.join)
+  def fromFile(file: Path): ErrorOrIO[Fasta] =
+    EitherT { file.openIOReader.bracket(_.closeIO)(r ⇒ fromReader(r).point[IO]).catchLeft map (_.join) }
 
-  def fromDirectory(directory: Path): IO[Parsed[List[Fasta]]] =
+  def fromDirectory(directory: Path): ErrorOrIO[List[Fasta]] =
     directory.files("*.{fasta,fas,fna,faa,ffn,frna}") >>= {
-      _.map(fromFile).sequence map (_.sequenceU)
+      _.map(fromFile).sequenceU
     }
 
-  private def validate(res: ParseResult[Option[Fasta]]): Parsed[Fasta] =
+  private def validate(res: ParseResult[Option[Fasta]]): Throwable \/ Fasta =
     res.getOrElse(None) \/> new IllegalArgumentException("Could not parse content as FASTA")
 
 }
