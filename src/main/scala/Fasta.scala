@@ -77,9 +77,9 @@ object FastaParser extends RegexParsers {
   def fromFile(file: Path): ErrorOrIO[Fasta] =
     EitherT { file.openIOReader.bracket(_.closeIO)(r ⇒ fromReader(r).point[IO]).catchLeft map (_.join) }
 
-  def fromDirectory(directory: Path): ErrorOrIO[List[Fasta]] =
+  def fromDirectory(directory: Path): ErrorOrIO[List[(Fasta, Path)]] =
     directory.files("*.{fasta,fas,fna,faa,ffn,frna}") >>= {
-      _.map(fromFile).sequenceU
+      files ⇒ (files map fromFile).sequenceU map { _.zip(files) }
     }
 
   private def validate(res: ParseResult[Option[Fasta]]): Throwable \/ Fasta =

@@ -97,7 +97,8 @@ class `FastaParser Specification` extends BaseSpec { def is = s2"""
     } sequence
 
     lazy val read = FastaParser.fromDirectory(directory) exists {
-      _.filterNot(fastas.contains[Fasta]).size == 0
+      parsed ⇒ parsed.size ≟ fastas.size &&
+               parsed.filter(t ⇒ fastas.contains(t._1)).size ≟ fastas.size
     }
 
     (write *> read).unsafePerformIO
