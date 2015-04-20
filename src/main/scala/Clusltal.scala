@@ -13,7 +13,7 @@ object Clustal {
       config ⇒ execute(s"${config.clustalo} -i $input -o $alignment --distmat-out=$distmat --percent-id --full --force")
     }
 
-  // TODO: ugly, clean up
+  // TODO: clean up
   def withDistanceMatrixOf[A](input: Path)(f: Path ⇒ ErrorOrIO[A]): ConfiguredT[ErrorOrIO, A] = {
     lazy val distMat = input + ".distmat"
     lazy val written = ConfiguredT(config ⇒ distanceMatrix(input, config.nullPath, distMat)(config))

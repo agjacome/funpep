@@ -16,13 +16,14 @@ object Filter {
 
   // TODO: clean up
   def filterSimilarEntries(directory: Path, threshold: Double): ConfiguredT[ErrorOrIO, List[FastaEntry]] = {
-    val files = ConfiguredT { _ ⇒ FastaParser.fromDirectory(directory) }
+    lazy val files = FastaParser.fromDirectory(directory).liftM[ConfiguredT]
 
-    val entries: ConfiguredT[ErrorOrIO, List[(FastaEntry, Boolean)]] = files >>= {
-      _.map(f ⇒ isEntrySimilarTo(f._2, f._1.entries.head, threshold).map((f._1.entries.head, _))).sequenceU
-    }
+    // Type ascription required because Scala does not correctly infer it here
+    lazy val entries: ConfiguredT[ErrorOrIO, List[(FastaEntry, Boolean)]] = files >>= (_ map {
+      f ⇒ isEntrySimilarTo(f._2, f._1.entries.head, threshold).map((f._1.entries.head, _))
+    } sequenceU)
 
-    entries map { _.filter(_._2).map(_._1) }
+    entries.map(_ collect { case (entry, true) ⇒ entry })
   }
 
   def isEntrySimilarTo(fasta: Path, entry: FastaEntry, threshold: Double): ConfiguredT[ErrorOrIO, Boolean] =

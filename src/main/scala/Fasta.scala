@@ -91,20 +91,16 @@ object FastaPrinter {
 
   import scalaz.\/.{ fromTryCatchThrowable ⇒ tryCatch }
 
-  type Printed = Throwable \/ Unit
-
-  lazy val toWriter: BufferedWriter ⇒ Fasta ⇒ Printed =
+  lazy val toWriter: BufferedWriter ⇒ Fasta ⇒ Throwable \/ Unit =
     writer ⇒ fasta ⇒ tryCatch[Unit, Throwable] { writer.write(fasta.shows) }
 
-  def toFile(file: Path)(fasta: ⇒ Fasta): IO[Printed] =
-    file.openIOWriter.bracket(_.closeIO) { toWriter(_)(fasta).point[IO] }
+  def toFile(file: Path)(fasta: ⇒ Fasta): ErrorOrIO[Unit] =
+    EitherT { file.openIOWriter.bracket(_.closeIO) { toWriter(_)(fasta).point[IO] } }
 
-  def toNewFile(directory: Path)(fasta: ⇒ Fasta): IO[Printed] =
+  def toNewFile(directory: Path)(fasta: ⇒ Fasta): ErrorOrIO[Unit] =
     toFile(directory / uuid.toPath + ".fasta")(fasta)
 
-  def toDirectory(directory: Path)(fastas: ⇒ List[Fasta]): IO[Printed] =
-    fastas.map(f ⇒ toNewFile(directory)(f)).sequence map {
-      _.sequenceU map (_ => ())
-    }
+  def toDirectory(directory: Path)(fastas: ⇒ List[Fasta]): ErrorOrIO[Unit] =
+    fastas.map(f ⇒ toNewFile(directory)(f)).sequenceU.map(_ ⇒ ())
 
 }
