@@ -1,14 +1,18 @@
 package es.uvigo.ei.sing.funpep
 
+import java.nio.file.Path
+
 import scalaz.Scalaz._
 
 
-object Splitter extends ((Fasta, Fasta) ⇒ Stream[Fasta]) {
+object Splitter {
 
-  def split(comparing: Fasta, reference: Fasta): Stream[Fasta] =
-    comparing.entries.toStream map { Fasta(_, reference.entries.toList: _*) }
+  def split(comparing: Fasta, reference: Fasta): List[Fasta] =
+    comparing.entries.map(e ⇒ Fasta(e <:: reference.entries)).toList
 
-  override def apply(comparing: Fasta, reference: Fasta): Stream[Fasta] =
-    split(comparing, reference)
+  def splitAndSaveTo(directory: Path)(comparing: Fasta, reference: Fasta): ErrorOrIO[Unit] =
+    FastaPrinter.toDirectory(directory) {
+      split(comparing, reference)
+    }
 
 }
