@@ -54,7 +54,7 @@ package object funpep {
     def /(p: Path  ): Path = path.resolve(p)
     def +(s: String): Path = Paths.get(path.toString + s)
 
-    def delete: IO[Unit] = Files.deleteIfExists(path).point[IO] map { _ ⇒ () }
+    def delete: ErrorOrIO[Unit] = EitherT { IO(Files.deleteIfExists(path)).catchLeft } map { _ ⇒ () }
 
     def openIOReader: IO[BufferedReader] = Files.newBufferedReader(path, UTF_8).point[IO]
     def openIOWriter: IO[BufferedWriter] = Files.newBufferedWriter(path, UTF_8).point[IO]
