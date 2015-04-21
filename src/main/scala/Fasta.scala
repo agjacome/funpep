@@ -65,8 +65,8 @@ object FastaParser extends RegexParsers {
   lazy val seqLine  = """[^>].*""".r ^^ { _.trim      }
   lazy val sequence = seqLine.+      ^^ { _.mkString  }
 
-  lazy val entry = header ~ sequence ^^ { e ⇒ FastaEntry(e._1, e._2) }
-  lazy val fasta = entry.+           ^^ { f ⇒ f.toNel map Fasta      }
+  lazy val entry = header ~ sequence ^^ { e ⇒ FastaEntry(e._1, e._2.uncased) }
+  lazy val fasta = entry.+           ^^ { f ⇒ f.toNel map Fasta              }
 
   lazy val parseString: String         ⇒ ParseResult[Option[Fasta]] = parseAll(fasta, _)
   lazy val parseReader: BufferedReader ⇒ ParseResult[Option[Fasta]] = parseAll(fasta, _)

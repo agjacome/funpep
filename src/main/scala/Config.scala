@@ -10,7 +10,12 @@ import argonaut._
 import argonaut.Argonaut._
 
 
-final case class Config (clustalo: Path, nullPath: Path)
+final case class Config (
+  clustalo:     Path,
+  nullPath:     Path,
+  databasePath: Path,
+  temporalPath: Path
+)
 
 object Config {
 
@@ -39,9 +44,9 @@ object ConfigParser {
     file.contentsAsString >>= { str ⇒ EitherT(fromString(str).point[IO]) }
 
   implicit def PathDecodeJson: DecodeJson[Path] =
-    optionDecoder(_.string.map(str ⇒ path"$str"), "Path")
+    optionDecoder(_.string.map(_.toPath.toAbsolutePath), "Path")
 
   implicit def ConfigDecodeJson: DecodeJson[Config] =
-    jdecode2L(Config.apply)("clustalo", "nullPath")
+    jdecode4L(Config.apply)("clustalo", "nullPath", "databasePath", "temporalPath")
 
 }

@@ -1,4 +1,6 @@
 {
-  "clustalo": "/usr/bin/clustalo",
-  "nullPath": "/dev/null"
+  "clustalo":     "/usr/bin/clustalo",
+  "nullPath":     "/dev/null",
+  "databasePath": "db/store",
+  "temporalPath": "db/temp"
 }

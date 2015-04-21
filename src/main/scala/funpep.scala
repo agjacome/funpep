@@ -52,6 +52,7 @@ package object funpep {
 
   implicit class PathOps(val path: Path) extends AnyVal {
     def /(p: Path  ): Path = path.resolve(p)
+    def /(p: String): Path = path.resolve(p)
     def +(s: String): Path = Paths.get(path.toString + s)
 
     def delete: ErrorOrIO[Unit] = EitherT { IO(Files.deleteIfExists(path)).catchLeft } map { _ ⇒ () }
@@ -76,15 +77,9 @@ package object funpep {
   }
 
   implicit class StringOps(val str: String) extends AnyVal {
-    def toPath: Path = Paths.get(str)
+    def toPath:  Path = Paths.get(str)
+    def uncased: CaseInsensitive[String] = CaseInsensitive(str)
   }
-
-  implicit class PathInterpolator(val sc: StringContext) extends AnyVal {
-    def path(args: Any*): Path = Paths.get(sc.s(args: _*))
-  }
-
-  implicit def stringToCaseInsensitive(str: String): CaseInsensitive[String] =
-    CaseInsensitive(str)
 
   def uuid: String = java.util.UUID.randomUUID.toString
 
