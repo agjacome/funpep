@@ -13,6 +13,9 @@ import scalaz.effect._
 import scalaz.iteratee._
 import scalaz.iteratee.Iteratee._
 
+import argonaut._
+import argonaut.Argonaut._
+
 
 package object funpep {
 
@@ -20,6 +23,14 @@ package object funpep {
   type ErrorOrIO[A]    = IoEitherT[Throwable, A]
 
   lazy val ¶ = System.lineSeparator
+
+  implicit val PathDecodeJson: DecodeJson[Path] =
+    optionDecoder(_.string.map(_.toPath.toAbsolutePath), "Path")
+
+  implicit class StringOps(val str: String) extends AnyVal {
+    def toPath:  Path = Paths.get(str)
+    def uncased: CaseInsensitive[String] = CaseInsensitive(str)
+  }
 
   implicit class BufferedReaderOps(val reader: BufferedReader) extends AnyVal {
     def closeIO:    IO[Unit]           = reader.close.point[IO]
@@ -74,11 +85,6 @@ package object funpep {
         files ⇒ files.iterator.asScala.toList.point[IO]
       } catchLeft)
     }
-  }
-
-  implicit class StringOps(val str: String) extends AnyVal {
-    def toPath:  Path = Paths.get(str)
-    def uncased: CaseInsensitive[String] = CaseInsensitive(str)
   }
 
   def uuid: String = java.util.UUID.randomUUID.toString

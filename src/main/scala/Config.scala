@@ -19,34 +19,37 @@ final case class Config (
 
 object Config {
 
-  type ConfiguredT[F[_], A] = ReaderT[F, Config, A]
-  type Configured[A]        = ConfiguredT[Id, A]
+  object syntax {
 
-  object ConfiguredT {
-    def apply[F[_], A](f: Config ⇒ F[A]): ConfiguredT[F, A] = Kleisli[F, Config, A](f)
+    type ConfiguredT[F[_], A] = ReaderT[F, Config, A]
+    type Configured[A]        = ConfiguredT[Id, A]
+
+    def ConfiguredT[F[_], A](f: Config ⇒ F[A]): ConfiguredT[F, A] =
+      Kleisli[F, Config, A](f)
+
+    def Configured[A](f: Config ⇒ A): Configured[A] =
+      Kleisli[Id, Config, A](f)
+
   }
 
-  object Configured {
-    def apply[A](f: Config ⇒ A): Configured[A] = Kleisli[Id, Config, A](f)
-  }
+  implicit val ConfigDecodeJson: DecodeJson[Config] =
+    jdecode4L(Config.apply)("clustalo", "nullPath", "databasePath", "temporalPath")
+
+  // aliases  of ConfigParser.from*
+  def apply(str:  String): Throwable \/ Config = ConfigParser.fromJsonString(str)
+  def apply(file: Path  ): ErrorOrIO[Config]   = ConfigParser.fromJsonFile(file)
 
 }
 
 object ConfigParser {
 
-  // TODO: move to top-level, call fromFile there
+  // TODO: move to top-level, call fromJsonFile there
   val file: Path = System.getProperty("config.file", resource("config.json").getPath).toPath
 
-  def fromString(str: String): Throwable \/ Config =
-    str.decodeEither[Config] leftMap { err ⇒ new RuntimeException(err) }
+  def fromJsonString(str: String): Throwable \/ Config =
+    str.decodeEither[Config] leftMap { err ⇒ new IllegalArgumentException(err) }
 
-  def fromFile(file: Path): ErrorOrIO[Config] =
-    file.contentsAsString >>= { str ⇒ EitherT(fromString(str).point[IO]) }
-
-  implicit def PathDecodeJson: DecodeJson[Path] =
-    optionDecoder(_.string.map(_.toPath.toAbsolutePath), "Path")
-
-  implicit def ConfigDecodeJson: DecodeJson[Config] =
-    jdecode4L(Config.apply)("clustalo", "nullPath", "databasePath", "temporalPath")
+  def fromJsonFile(file: Path): ErrorOrIO[Config] =
+    file.contentsAsString >>= { str ⇒ EitherT(fromJsonString(str).point[IO]) }
 
 }

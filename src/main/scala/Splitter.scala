@@ -11,8 +11,6 @@ object Splitter {
     comparing.entries.map(e ⇒ Fasta(e <:: reference.entries)).toList
 
   def splitAndSaveTo(directory: Path)(comparing: Fasta, reference: Fasta): ErrorOrIO[Unit] =
-    FastaPrinter.toDirectory(directory) {
-      split(comparing, reference)
-    }
+    FastaPrinter.toDirectory(directory) { split(comparing, reference) }
 
 }

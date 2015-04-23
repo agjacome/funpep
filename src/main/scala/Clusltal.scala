@@ -4,7 +4,7 @@ import java.nio.file.Path
 
 import scalaz.Scalaz._
 
-import Config._
+import Config.syntax._
 
 object Clustal {
 

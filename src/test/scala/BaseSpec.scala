@@ -21,8 +21,8 @@ trait Arbitraries {
   val nonEmptyStr   = nonEmptyListOf(alphaChar).map(_.mkString)
   val nonEmptyCIStr = nonEmptyStr.map(str ⇒ CaseInsensitive(str))
 
-  val genFastaEntry = (nonEmptyStr |@| nonEmptyCIStr)(FastaEntry)
-  val genFasta      = arbitrary[NonEmptyList[FastaEntry]] map Fasta
+  val genFastaEntry = (nonEmptyStr |@| nonEmptyCIStr)(FastaEntry.apply)
+  val genFasta      = arbitrary[NonEmptyList[FastaEntry]].map(Fasta.apply)
 
   implicit lazy val arbitraryFastaEntry: Arbitrary[FastaEntry] = Arbitrary(genFastaEntry)
   implicit lazy val arbitraryFasta:      Arbitrary[Fasta]      = Arbitrary(genFasta)

@@ -9,7 +9,7 @@ import scalaz.effect._
 import scalaz.iteratee._
 import scalaz.iteratee.Iteratee._
 
-import Config._
+import Config.syntax._
 
 
 object Filter {

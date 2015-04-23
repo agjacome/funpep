@@ -10,9 +10,13 @@ import scalaz.Scalaz._
 import scalaz.effect._
 
 
-final case class FastaEntry (id: FastaEntry.ID, seq: CaseInsensitive[String])
+final case class FastaEntry (id: FastaEntry.ID, seq: CaseInsensitive[String]) {
 
-object FastaEntry extends ((String, CaseInsensitive[String]) ⇒ FastaEntry) {
+  lazy val toEntryString: String = ">" + id + ¶ + seq.original.grouped(70).mkString(¶)
+
+}
+
+object FastaEntry {
 
   type ID = String
 
@@ -21,15 +25,19 @@ object FastaEntry extends ((String, CaseInsensitive[String]) ⇒ FastaEntry) {
       e1.seq ≟ e2.seq
 
     override def show(e: FastaEntry): Cord =
-      Cord(">", e.id, ¶, e.seq.original grouped 70 mkString ¶)
+      Cord(e.toEntryString)
   }
 
 }
 
 final case class Fasta (entries: NonEmptyList[FastaEntry]) {
 
+  import Fasta.FastaInstances
+
+  lazy val toFastaString: String = entries.map(_.toEntryString).toList.mkString(¶)
+
   def filter(cond: FastaEntry ⇒ Boolean): Option[Fasta] =
-    entries.toList.filter(cond).toNel.map(Fasta)
+    entries.toList.filter(cond).toNel.map(Fasta.apply)
 
   def find(cond: FastaEntry ⇒ Boolean): Option[FastaEntry] =
     entries.toStream.find(cond)
@@ -37,21 +45,27 @@ final case class Fasta (entries: NonEmptyList[FastaEntry]) {
   def exists(cond: FastaEntry ⇒ Boolean): Boolean =
     entries.toStream.exists(cond)
 
+  // aliases for FastaPrinter.to*
+  def toFile   (file: Path): ErrorOrIO[Unit] = FastaPrinter.toFile(file)(this)
+  def toNewFile(dir:  Path): ErrorOrIO[Unit] = FastaPrinter.toNewFile(dir)(this)
+
 }
 
-object Fasta extends (NonEmptyList[FastaEntry] ⇒ Fasta) {
-
-  import Cord.mkCord
+object Fasta {
 
   def apply(e: FastaEntry, es: FastaEntry*): Fasta =
     new Fasta(NonEmptyList(e, es: _*))
+
+  // aliases for FastaParser.from*
+  def apply(str:  String): Throwable \/ Fasta = FastaParser.fromString(str)
+  def apply(file: Path  ): ErrorOrIO[Fasta]   = FastaParser.fromFile(file)
 
   implicit val FastaInstances = new Equal[Fasta] with Show[Fasta] with Semigroup[Fasta] {
     override def equal(f1: Fasta, f2: Fasta): Boolean =
       f1.entries ≟ f2.entries
 
     override def show(f: Fasta): Cord =
-      mkCord(¶, f.entries map (_.show) toList: _*)
+      Cord(f.toFastaString)
 
     override def append(f1: Fasta, f2: ⇒ Fasta): Fasta =
       Fasta(f1.entries.append(f2.entries))
@@ -66,7 +80,7 @@ object FastaParser extends RegexParsers {
   lazy val sequence = seqLine.+      ^^ { _.mkString  }
 
   lazy val entry = header ~ sequence ^^ { e ⇒ FastaEntry(e._1, e._2.uncased) }
-  lazy val fasta = entry.+           ^^ { f ⇒ f.toNel map Fasta              }
+  lazy val fasta = entry.+           ^^ { f ⇒ f.toNel.map(Fasta.apply)       }
 
   lazy val parseString: String         ⇒ ParseResult[Option[Fasta]] = parseAll(fasta, _)
   lazy val parseReader: BufferedReader ⇒ ParseResult[Option[Fasta]] = parseAll(fasta, _)
@@ -92,7 +106,7 @@ object FastaPrinter {
   import scalaz.\/.{ fromTryCatchThrowable ⇒ tryCatch }
 
   lazy val toWriter: BufferedWriter ⇒ Fasta ⇒ Throwable \/ Unit =
-    writer ⇒ fasta ⇒ tryCatch[Unit, Throwable] { writer.write(fasta.shows) }
+    writer ⇒ fasta ⇒ tryCatch[Unit, Throwable] { writer.write(fasta.toFastaString) }
 
   def toFile(file: Path)(fasta: ⇒ Fasta): ErrorOrIO[Unit] =
     EitherT { file.openIOWriter.bracket(_.closeIO) { toWriter(_)(fasta).point[IO] } }
