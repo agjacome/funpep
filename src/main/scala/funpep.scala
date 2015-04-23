@@ -97,4 +97,7 @@ package object funpep {
       "Context classloader is not set for the current thread."
     } getResource resource
 
+  def property(name: String): Option[String] =
+    Option(System.getProperty(name))
+
 }

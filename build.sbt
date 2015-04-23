@@ -45,9 +45,9 @@ scalacOptions in (Compile, console) ~= { _ filterNot Set(
   "-Xfatal-warnings", "-Ywarn-unused-import"
 )}
 
-// Faulty warts in some cases, will use "Warts.all" and explicitly suppress
-// warnings in those once WartRemover 0.13 is published with it obeying
-// the @SuppressWarnings annotation.
+// Faulty warts in some cases, will use "Warts.all" and explicitly suppress them
+// where required once WartRemover 0.13 is published (with its support for
+// Java's @SuppressWarnings annotation).
 wartremoverWarnings ++= Warts.allBut(
   Wart.Any, Wart.NoNeedForMonad, Wart.Nothing
 )

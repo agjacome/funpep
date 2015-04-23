@@ -44,7 +44,7 @@ object Config {
 object ConfigParser {
 
   // TODO: move to top-level, call fromJsonFile there
-  val file: Path = System.getProperty("config.file", resource("config.json").getPath).toPath
+  val file: Path = (property("config.file") | resource("config.json").getPath).toPath
 
   def fromJsonString(str: String): Throwable \/ Config =
     str.decodeEither[Config] leftMap { err ⇒ new IllegalArgumentException(err) }
