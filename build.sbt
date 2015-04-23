@@ -45,7 +45,12 @@ scalacOptions in (Compile, console) ~= { _ filterNot Set(
   "-Xfatal-warnings", "-Ywarn-unused-import"
 )}
 
-wartremoverWarnings ++= Warts.allBut(Wart.NoNeedForMonad)
+// Faulty warts in some cases, will use "Warts.all" and explicitly suppress
+// warnings in those once WartRemover 0.13 is published with it obeying
+// the @SuppressWarnings annotation.
+wartremoverWarnings ++= Warts.allBut(
+  Wart.Any, Wart.NoNeedForMonad, Wart.Nothing
+)
 
 initialCommands in console := """
   |import scalaz._
