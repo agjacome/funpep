@@ -3,6 +3,7 @@ package es.uvigo.ei.sing
 import java.io.{ BufferedReader, BufferedWriter, IOException }
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.{ Files, Path, Paths }
+import java.util.UUID
 
 import scala.collection.JavaConverters._
 import scala.sys.process.Process
@@ -13,19 +14,26 @@ import scalaz.effect._
 import scalaz.iteratee._
 import scalaz.iteratee.Iteratee._
 
-import argonaut._
-import argonaut.Argonaut._
-
 
 package object funpep {
 
-  type IoEitherT[A, B] = EitherT[IO, A, B]
-  type ErrorOrIO[A]    = IoEitherT[Throwable, A]
+  type ErrorOrIO[A] = EitherT[IO, Throwable, A]
 
   lazy val ¶ = System.lineSeparator
 
-  implicit val PathDecodeJson: DecodeJson[Path] =
-    optionDecoder(_.string.map(_.toPath.toAbsolutePath), "Path")
+  def uuid: UUID = UUID.randomUUID
+
+  def execute(command: String, args: String*): ErrorOrIO[String] =
+    EitherT { Process(command, args).point[IO].map(_.!!).catchLeft }
+
+  def resource(resource: String): java.net.URL =
+    Option(Thread.currentThread.getContextClassLoader) err {
+      "Context classloader is not set for the current thread."
+    } getResource resource
+
+  def property(name: String): Option[String] =
+    Option(System.getProperty(name))
+
 
   implicit class StringOps(val str: String) extends AnyVal {
     def toPath:  Path = Paths.get(str)
@@ -87,17 +95,27 @@ package object funpep {
     }
   }
 
-  def uuid: String = java.util.UUID.randomUUID.toString
 
-  def execute(command: String, args: String*): ErrorOrIO[String] =
-    EitherT { Process(command, args).point[IO].map(_.!!).catchLeft }
+  object json {
 
-  def resource(resource: String): java.net.URL =
-    Option(Thread.currentThread.getContextClassLoader) err {
-      "Context classloader is not set for the current thread."
-    } getResource resource
+    import argonaut._
+    import argonaut.Argonaut._
+    import \/.{ fromTryCatchThrowable ⇒ tryCatch }
 
-  def property(name: String): Option[String] =
-    Option(System.getProperty(name))
+    implicit val PathDecodeJson: DecodeJson[Path] =
+      optionDecoder(_.string map (_.toPath.toAbsolutePath), "Path")
+
+    implicit val PathEncodeJson: EncodeJson[Path] =
+      StringEncodeJson.contramap(_.toAbsolutePath.toString)
+
+    implicit val UUIDDecodeJson: DecodeJson[UUID] =
+      optionDecoder(_.string >>= {
+        str ⇒ tryCatch[UUID, IllegalArgumentException](UUID.fromString(str)).toOption
+      }, "UUID")
+
+    implicit val UUIDEncodeJson: EncodeJson[UUID] =
+      StringEncodeJson.contramap(_.toString)
+
+  }
 
 }

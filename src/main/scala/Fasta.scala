@@ -112,7 +112,7 @@ object FastaPrinter {
     EitherT { file.openIOWriter.bracket(_.closeIO) { toWriter(_)(fasta).point[IO] } }
 
   def toNewFile(directory: Path)(fasta: ⇒ Fasta): ErrorOrIO[Unit] =
-    toFile(directory / uuid.toPath + ".fasta")(fasta)
+    toFile(directory / uuid.toString + ".fasta")(fasta)
 
   def toDirectory(directory: Path)(fastas: ⇒ List[Fasta]): ErrorOrIO[Unit] =
     fastas.map(f ⇒ toNewFile(directory)(f)).sequenceU.map(_ ⇒ ())

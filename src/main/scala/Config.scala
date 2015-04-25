@@ -19,6 +19,15 @@ final case class Config (
 
 object Config {
 
+  import json._
+
+  implicit val ConfigDecodeJson: DecodeJson[Config] =
+    jdecode4L(Config.apply)("clustalo", "nullPath", "databasePath", "temporalPath")
+
+  // aliases  of ConfigParser.from*
+  def apply(str:  String): Throwable \/ Config = ConfigParser.fromJsonString(str)
+  def apply(file: Path  ): ErrorOrIO[Config]   = ConfigParser.fromJsonFile(file)
+
   object syntax {
 
     type ConfiguredT[F[_], A] = ReaderT[F, Config, A]
@@ -31,13 +40,6 @@ object Config {
       Kleisli[Id, Config, A](f)
 
   }
-
-  implicit val ConfigDecodeJson: DecodeJson[Config] =
-    jdecode4L(Config.apply)("clustalo", "nullPath", "databasePath", "temporalPath")
-
-  // aliases  of ConfigParser.from*
-  def apply(str:  String): Throwable \/ Config = ConfigParser.fromJsonString(str)
-  def apply(file: Path  ): ErrorOrIO[Config]   = ConfigParser.fromJsonFile(file)
 
 }
 
