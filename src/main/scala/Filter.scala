@@ -3,7 +3,6 @@ package es.uvigo.ei.sing.funpep
 import java.io.IOException
 import java.nio.file.{ Path, Files }
 
-import scalaz._
 import scalaz.Scalaz._
 import scalaz.effect._
 import scalaz.iteratee._
@@ -33,10 +32,10 @@ object Filter {
     Clustal.withDistanceMatrixOf(fasta)(isEntrySimilarEnough(entry, threshold))
 
   def maxDistMatValue(distMat: Path, entry: FastaEntry): ⇄[Double] =
-    EitherT(distMat.enumerateLines(findDistMatEntry(entry)) map { line ⇒
+    distMat.enumerateLines(findDistMatEntry(entry)) map { line ⇒
       val dist = line >>= { maxDistMatLineValue(_, entry) }
       dist \/> new IOException(s"Could not found maximum distance of ${entry.id} in $distMat")
-    })
+    }
 
   def maxDistMatLineValue(distMatLine: String, entry: FastaEntry): Option[Double] = {
     val dists = distMatLine.drop(entry.id.size + 12).split("\\s+").toList

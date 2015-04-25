@@ -112,7 +112,7 @@ object FastaPrinter {
     writer ⇒ fasta ⇒ tryCatch[Unit, Throwable] { writer.write(fasta.toFastaString) }
 
   def toFile(file: Path)(fasta: ⇒ Fasta): ⇄[Unit] =
-    EitherT { file.openIOWriter.bracket(_.closeIO) { toWriter(_)(fasta).point[IO] } }
+    file.openIOWriter.bracket(_.closeIO) { toWriter(_)(fasta).point[IO] }
 
   def toNewFile(directory: Path)(fasta: ⇒ Fasta): ⇄[Unit] =
     toFile(directory / uuid.toString + ".fasta")(fasta)

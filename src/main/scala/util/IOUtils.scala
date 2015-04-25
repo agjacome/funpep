@@ -20,14 +20,16 @@ object IOUtils {
 
   type ⇄[A] = EitherT[IO, Throwable, A]
 
-  def ⇄[A](a: A): ⇄[A] = EitherT { IO(a).catchLeft }
+  implicit def EitherIOToEitherTIO[A, B](e: ⇒ IO[A ∨ B])(implicit asThrowable: A ⇒ Throwable): ⇄[B] =
+    EitherT(e) leftMap asThrowable
 
 
   def execute(command: String, args: String*): ⇄[String] =
-    ⇄ { Process(command, args) } map (_.!!)
+    IO(Process(command, args)).map (_.!!).catchLeft
 
 
   implicit class BufferedReaderOps(val reader: BufferedReader) extends AnyVal {
+
     def closeIO:    IO[Unit]           = reader.close.point[IO]
     def readLineIO: IO[Option[String]] = Option(reader.readLine).point[IO]
 
@@ -43,9 +45,11 @@ object IOUtils {
       after(reader)
       res
     }
+
   }
 
   implicit class BufferedWriterOps(val writer: BufferedWriter) extends AnyVal {
+
     def closeIO: IO[Unit] = writer.close.point[IO]
     def writeIO(str: String): IO[Unit] = writer.write(str).point[IO]
 
@@ -54,6 +58,7 @@ object IOUtils {
       after(writer)
       res
     }
+
   }
 
   implicit class PathOps(val path: Path) extends AnyVal {
@@ -63,17 +68,17 @@ object IOUtils {
     def +(s: String): Path = Paths.get(path.toString + s)
 
     def create: ⇄[Unit] =
-      ⇄ { Files.createFile(path) } map { _ ⇒ () }
+      IO(Files.createFile(path)) map (_ ⇒ ()) catchLeft
 
     def createDir: ⇄[Unit] =
-      ⇄ { Files.createDirectories(path) } map { _ ⇒ () }
+      IO(Files.createDirectories(path)) map (_ ⇒ ()) catchLeft
 
     def delete: ⇄[Unit] =
-      ⇄ { Files.deleteIfExists(path) } map { _ ⇒ () }
+      IO(Files.deleteIfExists(path)) map (_ ⇒ ()) catchLeft
 
     // TODO: !!!
     def deleteDir: ⇄[Unit] =
-      ⇄ { Files.walkFileTree(path, new SimpleFileVisitor[Path]() {
+      IO(Files.walkFileTree(path, new SimpleFileVisitor[Path]() {
         override def visitFile(file: Path, attrs: attribute.BasicFileAttributes): FileVisitResult = {
           Files.delete(file)
           FileVisitResult.CONTINUE
@@ -83,25 +88,23 @@ object IOUtils {
           Files.delete(dir)
           FileVisitResult.CONTINUE
         }
-      }) } map { _ ⇒ () }
+      })) map(_ ⇒ ()) catchLeft
 
-    def openIOReader: IO[BufferedReader] = Files.newBufferedReader(path, UTF_8).point[IO]
-    def openIOWriter: IO[BufferedWriter] = Files.newBufferedWriter(path, UTF_8).point[IO]
+    def openIOReader: IO[BufferedReader] = IO(Files.newBufferedReader(path, UTF_8))
+    def openIOWriter: IO[BufferedWriter] = IO(Files.newBufferedWriter(path, UTF_8))
 
     def enumerateLines[A](action: IterateeT[IoExceptionOr[String], IO, A]): IO[A] =
       openIOReader.bracket(_.closeIO) { reader ⇒ (action &= reader.enumerateLines).run }
 
     def contentsAsString: ⇄[String] =
-      EitherT(enumerateLines(consume[IoExceptionOr[String], IO, List]) map {
+      enumerateLines(consume[IoExceptionOr[String], IO, List]) map {
         _.traverse(_.toOption).map(_ mkString ¶) \/> new IOException(s"Could not read contents of $path")
-      })
+      }
 
-    def files(glob: String): ⇄[List[Path]] = {
-      val stream = Files.newDirectoryStream(path, glob)
-      EitherT(stream.point[IO].bracket(_.close.point[IO]) {
+    def files(glob: String): ⇄[List[Path]] =
+      IO(Files.newDirectoryStream(path, glob)).bracket(_.close.point[IO]) {
         files ⇒ files.iterator.asScala.toList.point[IO]
-      } catchLeft)
-    }
+      } catchLeft
 
   }
 

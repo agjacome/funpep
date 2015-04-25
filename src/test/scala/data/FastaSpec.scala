@@ -1,4 +1,5 @@
 package es.uvigo.ei.sing.funpep
+package data
 
 import java.io.{ BufferedReader, StringReader }
 import java.nio.file.{ Files, Path }
@@ -7,7 +8,6 @@ import scalaz.Scalaz._
 import scalaz.effect.IO
 import scalaz.scalacheck.ScalazProperties._
 
-import data.{ FastaEntry, Fasta, FastaParser, FastaPrinter }
 import util.IOUtils._
 
 class `FastaEntry Specification` extends BaseSpec { def is = s2"""

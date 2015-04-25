@@ -24,7 +24,7 @@ final case class Analysis (
 ) {
 
   // aliases of AnalysisPrinter.to*
-  def toJsonString: String = AnalysisPrinter.toJsonString(this)
+  def toJsonString: String            = AnalysisPrinter.toJsonString(this)
   def toJsonFile(file: Path): ⇄[Unit] = AnalysisPrinter.toJsonFile(file)(this)
 
 }
@@ -76,20 +76,20 @@ object AnalysisParser {
     str.decodeEither[Analysis] leftMap { err ⇒ new IllegalArgumentException(err) }
 
   def fromJsonFile(file: Path): ⇄[Analysis] =
-    file.contentsAsString >>= { str ⇒ EitherT(fromJsonString(str).point[IO]) }
+    file.contentsAsString >>= { str ⇒ fromJsonString(str).point[IO] }
 
 }
 
 object AnalysisPrinter {
 
-  import scalaz.\/.{ fromTryCatchThrowable ⇒ tryCatch }
+  import \/.{ fromTryCatchThrowable ⇒ tryCatch }
 
   def toJsonString(s: ⇒ Analysis): String =
     implicitly[EncodeJson[Analysis]].encode(s).nospaces
 
   def toJsonFile(file: Path)(s: ⇒ Analysis): ⇄[Unit] =
-    EitherT(file.openIOWriter.bracket(_.closeIO) {
+    file.openIOWriter.bracket(_.closeIO) {
       writer ⇒ tryCatch[Unit, Throwable](writer.write(toJsonString(s))).point[IO]
-    })
+    }
 
 }

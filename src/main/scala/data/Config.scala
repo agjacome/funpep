@@ -28,7 +28,7 @@ object Config {
 
   // aliases  of ConfigParser.from*
   def apply(str:  String): Throwable ∨ Config = ConfigParser.fromJsonString(str)
-  def apply(file: Path  ): ⇄[Config]  = ConfigParser.fromJsonFile(file)
+  def apply(file: Path  ): ⇄[Config]          = ConfigParser.fromJsonFile(file)
 
   object syntax {
 
@@ -54,6 +54,6 @@ object ConfigParser {
     str.decodeEither[Config] leftMap { err ⇒ new IllegalArgumentException(err) }
 
   def fromJsonFile(file: Path): ⇄[Config] =
-    file.contentsAsString >>= { str ⇒ EitherT(fromJsonString(str).point[IO]) }
+    file.contentsAsString >>= { str ⇒ fromJsonString(str).point[IO] }
 
 }
