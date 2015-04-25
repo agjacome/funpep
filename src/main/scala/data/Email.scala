@@ -1,4 +1,5 @@
 package es.uvigo.ei.sing.funpep
+package data
 
 import scalaz._
 import scalaz.Scalaz._

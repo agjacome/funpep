@@ -7,6 +7,8 @@ import scalaz.Scalaz._
 import scalaz.effect.IO
 import scalaz.scalacheck.ScalazProperties._
 
+import data.{ FastaEntry, Fasta, FastaParser, FastaPrinter }
+import util.IOUtils._
 
 class `FastaEntry Specification` extends BaseSpec { def is = s2"""
 

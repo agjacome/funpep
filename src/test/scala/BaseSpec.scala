@@ -9,6 +9,8 @@ import org.specs2._
 import org.scalacheck._
 import org.scalacheck.util.Pretty
 
+import data._
+
 
 trait Arbitraries {
 

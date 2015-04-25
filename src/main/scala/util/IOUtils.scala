@@ -1,4 +1,5 @@
-package es.uvigo.ei.sing
+package es.uvigo.ei.sing.funpep
+package util
 
 import java.io.{ BufferedReader, BufferedWriter, IOException }
 import java.nio.charset.StandardCharsets.UTF_8
@@ -15,30 +16,16 @@ import scalaz.iteratee._
 import scalaz.iteratee.Iteratee._
 
 
-package object funpep {
+object IOUtils {
 
-  type ErrorOrIO[A] = EitherT[IO, Throwable, A]
+  type ⇄[A] = EitherT[IO, Throwable, A]
 
-  lazy val ¶ = System.lineSeparator
-
-  def uuid: UUID = UUID.randomUUID
-
-  def execute(command: String, args: String*): ErrorOrIO[String] =
-    EitherT { Process(command, args).point[IO].map(_.!!).catchLeft }
-
-  def resource(resource: String): java.net.URL =
-    Option(Thread.currentThread.getContextClassLoader) err {
-      "Context classloader is not set for the current thread."
-    } getResource resource
-
-  def property(name: String): Option[String] =
-    Option(System.getProperty(name))
+  def ⇄[A](a: A): ⇄[A] = EitherT { IO(a).catchLeft }
 
 
-  implicit class StringOps(val str: String) extends AnyVal {
-    def toPath:  Path = Paths.get(str)
-    def uncased: CaseInsensitive[String] = CaseInsensitive(str)
-  }
+  def execute(command: String, args: String*): ⇄[String] =
+    ⇄ { Process(command, args) } map (_.!!)
+
 
   implicit class BufferedReaderOps(val reader: BufferedReader) extends AnyVal {
     def closeIO:    IO[Unit]           = reader.close.point[IO]
@@ -75,13 +62,18 @@ package object funpep {
     def /(p: String): Path = path.resolve(p)
     def +(s: String): Path = Paths.get(path.toString + s)
 
-    def create:    ErrorOrIO[Unit] = EitherT(IO { Files.createFile(path)        } catchLeft) map { _ ⇒ () }
-    def createDir: ErrorOrIO[Unit] = EitherT(IO { Files.createDirectories(path) } catchLeft) map { _ ⇒ () }
-    def delete:    ErrorOrIO[Unit] = EitherT(IO { Files.deleteIfExists(path)    } catchLeft) map { _ ⇒ () }
+    def create: ⇄[Unit] =
+      ⇄ { Files.createFile(path) } map { _ ⇒ () }
+
+    def createDir: ⇄[Unit] =
+      ⇄ { Files.createDirectories(path) } map { _ ⇒ () }
+
+    def delete: ⇄[Unit] =
+      ⇄ { Files.deleteIfExists(path) } map { _ ⇒ () }
 
     // TODO: !!!
-    def deleteDir: ErrorOrIO[Unit] = EitherT(IO {
-      Files.walkFileTree(path, new SimpleFileVisitor[Path]() {
+    def deleteDir: ⇄[Unit] =
+      ⇄ { Files.walkFileTree(path, new SimpleFileVisitor[Path]() {
         override def visitFile(file: Path, attrs: attribute.BasicFileAttributes): FileVisitResult = {
           Files.delete(file)
           FileVisitResult.CONTINUE
@@ -91,8 +83,7 @@ package object funpep {
           Files.delete(dir)
           FileVisitResult.CONTINUE
         }
-      })
-    } catchLeft) map { _ ⇒ () }
+      }) } map { _ ⇒ () }
 
     def openIOReader: IO[BufferedReader] = Files.newBufferedReader(path, UTF_8).point[IO]
     def openIOWriter: IO[BufferedWriter] = Files.newBufferedWriter(path, UTF_8).point[IO]
@@ -100,40 +91,17 @@ package object funpep {
     def enumerateLines[A](action: IterateeT[IoExceptionOr[String], IO, A]): IO[A] =
       openIOReader.bracket(_.closeIO) { reader ⇒ (action &= reader.enumerateLines).run }
 
-    def contentsAsString: ErrorOrIO[String] =
+    def contentsAsString: ⇄[String] =
       EitherT(enumerateLines(consume[IoExceptionOr[String], IO, List]) map {
         _.traverse(_.toOption).map(_ mkString ¶) \/> new IOException(s"Could not read contents of $path")
       })
 
-    def files(glob: String): ErrorOrIO[List[Path]] = {
+    def files(glob: String): ⇄[List[Path]] = {
       val stream = Files.newDirectoryStream(path, glob)
       EitherT(stream.point[IO].bracket(_.close.point[IO]) {
         files ⇒ files.iterator.asScala.toList.point[IO]
       } catchLeft)
     }
-
-  }
-
-
-  object json {
-
-    import argonaut._
-    import argonaut.Argonaut._
-    import \/.{ fromTryCatchThrowable ⇒ tryCatch }
-
-    implicit val PathDecodeJson: DecodeJson[Path] =
-      optionDecoder(_.string map (_.toPath.toAbsolutePath), "Path")
-
-    implicit val PathEncodeJson: EncodeJson[Path] =
-      StringEncodeJson.contramap(_.toAbsolutePath.toString)
-
-    implicit val UUIDDecodeJson: DecodeJson[UUID] =
-      optionDecoder(_.string >>= {
-        str ⇒ tryCatch[UUID, IllegalArgumentException](UUID.fromString(str)).toOption
-      }, "UUID")
-
-    implicit val UUIDEncodeJson: EncodeJson[UUID] =
-      StringEncodeJson.contramap(_.toString)
 
   }
 

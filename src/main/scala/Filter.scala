@@ -9,27 +9,30 @@ import scalaz.effect._
 import scalaz.iteratee._
 import scalaz.iteratee.Iteratee._
 
-import Config.syntax._
+import data.{ Fasta, FastaEntry, FastaParser }
+import data.Config.syntax._
+import contrib.Clustal
+import util.IOUtils._
 
 
 object Filter {
 
   // TODO: clean up
-  def filterSimilarEntries(directory: Path, threshold: Double): ConfiguredT[ErrorOrIO, List[FastaEntry]] = {
+  def filterSimilarEntries(directory: Path, threshold: Double): ConfiguredT[⇄, List[FastaEntry]] = {
     lazy val files = FastaParser.fromDirectory(directory).liftM[ConfiguredT]
 
     // Type ascription required because Scala does not correctly infer it here
-    lazy val entries: ConfiguredT[ErrorOrIO, List[(FastaEntry, Boolean)]] = files >>= (_ map {
+    lazy val entries: ConfiguredT[⇄, List[(FastaEntry, Boolean)]] = files >>= (_ map {
       f ⇒ isEntrySimilarTo(f._2, f._1.entries.head, threshold).map((f._1.entries.head, _))
     } sequenceU)
 
     entries.map(_ collect { case (entry, true) ⇒ entry })
   }
 
-  def isEntrySimilarTo(fasta: Path, entry: FastaEntry, threshold: Double): ConfiguredT[ErrorOrIO, Boolean] =
+  def isEntrySimilarTo(fasta: Path, entry: FastaEntry, threshold: Double): ConfiguredT[⇄, Boolean] =
     Clustal.withDistanceMatrixOf(fasta)(isEntrySimilarEnough(entry, threshold))
 
-  def maxDistMatValue(distMat: Path, entry: FastaEntry): ErrorOrIO[Double] =
+  def maxDistMatValue(distMat: Path, entry: FastaEntry): ⇄[Double] =
     EitherT(distMat.enumerateLines(findDistMatEntry(entry)) map { line ⇒
       val dist = line >>= { maxDistMatLineValue(_, entry) }
       dist \/> new IOException(s"Could not found maximum distance of ${entry.id} in $distMat")
@@ -46,7 +49,7 @@ object Filter {
       h ← head[IoExceptionOr[String], IO]
     } yield h.map(_.toOption).flatten
 
-  private def isEntrySimilarEnough(entry: FastaEntry, threshold: Double)(distMat: Path): ErrorOrIO[Boolean] =
+  private def isEntrySimilarEnough(entry: FastaEntry, threshold: Double)(distMat: Path): ⇄[Boolean] =
     (maxDistMatValue(distMat, entry) <* distMat.delete) map { _ >= threshold }
 
 }

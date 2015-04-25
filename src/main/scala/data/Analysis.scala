@@ -1,4 +1,5 @@
 package es.uvigo.ei.sing.funpep
+package data
 
 import java.nio.file.Path
 import java.util.UUID
@@ -9,6 +10,9 @@ import scalaz.effect.IO
 
 import argonaut._
 import argonaut.Argonaut._
+
+import util.IOUtils._
+import util.JsonUtils._
 
 
 final case class Analysis (
@@ -21,13 +25,11 @@ final case class Analysis (
 
   // aliases of AnalysisPrinter.to*
   def toJsonString: String = AnalysisPrinter.toJsonString(this)
-  def toJsonFile(file: Path): ErrorOrIO[Unit] = AnalysisPrinter.toJsonFile(file)(this)
+  def toJsonFile(file: Path): ⇄[Unit] = AnalysisPrinter.toJsonFile(file)(this)
 
 }
 
 object Analysis {
-
-  import json._
 
   sealed trait Status
   case object Created  extends Status
@@ -64,7 +66,7 @@ object Analysis {
 
   // aliases of AnalysisParser.from*
   def apply(str:  String): Throwable ∨ Analysis = AnalysisParser.fromJsonString(str)
-  def apply(file: Path  ): ErrorOrIO[Analysis]  = AnalysisParser.fromJsonFile(file)
+  def apply(file: Path  ): ⇄[Analysis] = AnalysisParser.fromJsonFile(file)
 
 }
 
@@ -73,7 +75,7 @@ object AnalysisParser {
   def fromJsonString(str: String): Throwable ∨ Analysis =
     str.decodeEither[Analysis] leftMap { err ⇒ new IllegalArgumentException(err) }
 
-  def fromJsonFile(file: Path): ErrorOrIO[Analysis] =
+  def fromJsonFile(file: Path): ⇄[Analysis] =
     file.contentsAsString >>= { str ⇒ EitherT(fromJsonString(str).point[IO]) }
 
 }
@@ -85,7 +87,7 @@ object AnalysisPrinter {
   def toJsonString(s: ⇒ Analysis): String =
     implicitly[EncodeJson[Analysis]].encode(s).nospaces
 
-  def toJsonFile(file: Path)(s: ⇒ Analysis): ErrorOrIO[Unit] =
+  def toJsonFile(file: Path)(s: ⇒ Analysis): ⇄[Unit] =
     EitherT(file.openIOWriter.bracket(_.closeIO) {
       writer ⇒ tryCatch[Unit, Throwable](writer.write(toJsonString(s))).point[IO]
     })

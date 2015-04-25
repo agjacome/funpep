@@ -1,4 +1,5 @@
 package es.uvigo.ei.sing.funpep
+package data
 
 import java.nio.file.Path
 
@@ -8,6 +9,9 @@ import scalaz.effect.IO
 
 import argonaut._
 import argonaut.Argonaut._
+
+import util.IOUtils._
+import util.JsonUtils._
 
 
 final case class Config (
@@ -19,14 +23,12 @@ final case class Config (
 
 object Config {
 
-  import json._
-
   implicit val ConfigDecodeJson: DecodeJson[Config] =
     jdecode4L(Config.apply)("clustalo", "nullPath", "databasePath", "temporalPath")
 
   // aliases  of ConfigParser.from*
   def apply(str:  String): Throwable ∨ Config = ConfigParser.fromJsonString(str)
-  def apply(file: Path  ): ErrorOrIO[Config]  = ConfigParser.fromJsonFile(file)
+  def apply(file: Path  ): ⇄[Config]  = ConfigParser.fromJsonFile(file)
 
   object syntax {
 
@@ -51,7 +53,7 @@ object ConfigParser {
   def fromJsonString(str: String): Throwable ∨ Config =
     str.decodeEither[Config] leftMap { err ⇒ new IllegalArgumentException(err) }
 
-  def fromJsonFile(file: Path): ErrorOrIO[Config] =
+  def fromJsonFile(file: Path): ⇄[Config] =
     file.contentsAsString >>= { str ⇒ EitherT(fromJsonString(str).point[IO]) }
 
 }
