@@ -59,18 +59,18 @@ object Analysis {
 
   }
 
-  implicit val SettincsCodecJson: CodecJson[Analysis] =
+  implicit val AnalysisCodecJson: CodecJson[Analysis] =
     casecodec5(Analysis.apply, Analysis.unapply)("uuid", "status", "email", "threshold", "annotations")
 
   // aliases of AnalysisParser.from*
-  def apply(str:  String): Throwable \/ Analysis = AnalysisParser.fromJsonString(str)
-  def apply(file: Path  ): ErrorOrIO[Analysis]   = AnalysisParser.fromJsonFile(file)
+  def apply(str:  String): Throwable ∨ Analysis = AnalysisParser.fromJsonString(str)
+  def apply(file: Path  ): ErrorOrIO[Analysis]  = AnalysisParser.fromJsonFile(file)
 
 }
 
 object AnalysisParser {
 
-  def fromJsonString(str: String): Throwable \/ Analysis =
+  def fromJsonString(str: String): Throwable ∨ Analysis =
     str.decodeEither[Analysis] leftMap { err ⇒ new IllegalArgumentException(err) }
 
   def fromJsonFile(file: Path): ErrorOrIO[Analysis] =

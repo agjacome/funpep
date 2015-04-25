@@ -2,7 +2,7 @@ package es.uvigo.ei.sing
 
 import java.io.{ BufferedReader, BufferedWriter, IOException }
 import java.nio.charset.StandardCharsets.UTF_8
-import java.nio.file.{ Files, Path, Paths }
+import java.nio.file._
 import java.util.UUID
 
 import scala.collection.JavaConverters._
@@ -70,11 +70,29 @@ package object funpep {
   }
 
   implicit class PathOps(val path: Path) extends AnyVal {
+
     def /(p: Path  ): Path = path.resolve(p)
     def /(p: String): Path = path.resolve(p)
     def +(s: String): Path = Paths.get(path.toString + s)
 
-    def delete: ErrorOrIO[Unit] = EitherT { IO(Files.deleteIfExists(path)).catchLeft } map { _ ⇒ () }
+    def create:    ErrorOrIO[Unit] = EitherT(IO { Files.createFile(path)        } catchLeft) map { _ ⇒ () }
+    def createDir: ErrorOrIO[Unit] = EitherT(IO { Files.createDirectories(path) } catchLeft) map { _ ⇒ () }
+    def delete:    ErrorOrIO[Unit] = EitherT(IO { Files.deleteIfExists(path)    } catchLeft) map { _ ⇒ () }
+
+    // TODO: !!!
+    def deleteDir: ErrorOrIO[Unit] = EitherT(IO {
+      Files.walkFileTree(path, new SimpleFileVisitor[Path]() {
+        override def visitFile(file: Path, attrs: attribute.BasicFileAttributes): FileVisitResult = {
+          Files.delete(file)
+          FileVisitResult.CONTINUE
+        }
+
+        override def postVisitDirectory(dir: Path, err: IOException): FileVisitResult = {
+          Files.delete(dir)
+          FileVisitResult.CONTINUE
+        }
+      })
+    } catchLeft) map { _ ⇒ () }
 
     def openIOReader: IO[BufferedReader] = Files.newBufferedReader(path, UTF_8).point[IO]
     def openIOWriter: IO[BufferedWriter] = Files.newBufferedWriter(path, UTF_8).point[IO]
@@ -93,6 +111,7 @@ package object funpep {
         files ⇒ files.iterator.asScala.toList.point[IO]
       } catchLeft)
     }
+
   }
 
 

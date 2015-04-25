@@ -57,8 +57,8 @@ object Fasta {
     new Fasta(NonEmptyList(e, es: _*))
 
   // aliases for FastaParser.from*
-  def apply(str:  String): Throwable \/ Fasta = FastaParser.fromString(str)
-  def apply(file: Path  ): ErrorOrIO[Fasta]   = FastaParser.fromFile(file)
+  def apply(str:  String): Throwable ∨ Fasta = FastaParser.fromString(str)
+  def apply(file: Path  ): ErrorOrIO[Fasta]  = FastaParser.fromFile(file)
 
   implicit val FastaInstances = new Equal[Fasta] with Show[Fasta] with Semigroup[Fasta] {
     override def equal(f1: Fasta, f2: Fasta): Boolean =
@@ -85,8 +85,8 @@ object FastaParser extends RegexParsers {
   lazy val parseString: String         ⇒ ParseResult[Option[Fasta]] = parseAll(fasta, _)
   lazy val parseReader: BufferedReader ⇒ ParseResult[Option[Fasta]] = parseAll(fasta, _)
 
-  lazy val fromString: String         ⇒ Throwable \/ Fasta = parseString ∘ validate
-  lazy val fromReader: BufferedReader ⇒ Throwable \/ Fasta = parseReader ∘ validate
+  lazy val fromString: String         ⇒ Throwable ∨ Fasta = parseString ∘ validate
+  lazy val fromReader: BufferedReader ⇒ Throwable ∨ Fasta = parseReader ∘ validate
 
   def fromFile(file: Path): ErrorOrIO[Fasta] =
     EitherT { file.openIOReader.bracket(_.closeIO)(r ⇒ fromReader(r).point[IO]).catchLeft map (_.join) }
@@ -96,7 +96,7 @@ object FastaParser extends RegexParsers {
       files ⇒ (files map fromFile).sequenceU map { _.zip(files) }
     }
 
-  private def validate(res: ParseResult[Option[Fasta]]): Throwable \/ Fasta =
+  private def validate(res: ParseResult[Option[Fasta]]): Throwable ∨ Fasta =
     res.getOrElse(None) \/> new IllegalArgumentException("Could not parse content as FASTA")
 
 }
@@ -105,7 +105,7 @@ object FastaPrinter {
 
   import scalaz.\/.{ fromTryCatchThrowable ⇒ tryCatch }
 
-  lazy val toWriter: BufferedWriter ⇒ Fasta ⇒ Throwable \/ Unit =
+  lazy val toWriter: BufferedWriter ⇒ Fasta ⇒ Throwable ∨ Unit =
     writer ⇒ fasta ⇒ tryCatch[Unit, Throwable] { writer.write(fasta.toFastaString) }
 
   def toFile(file: Path)(fasta: ⇒ Fasta): ErrorOrIO[Unit] =
