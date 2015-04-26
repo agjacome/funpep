@@ -39,12 +39,12 @@ final class Analyzer private (val analysis: Analysis, val config: Config) {
 
   def analyze(comparing: Fasta, reference: Fasta): ⇄[Analyzer] =
     for {
-      _   ← create()
-      _   ← enqueue(comparing, reference)
-      _   ← split
-      _   ← filter()
-      end ← align()
-    } yield end
+      created  ← create()
+      enqueued ← created.enqueue(comparing, reference)
+      splitted ← enqueued.split()
+      filtered ← splitted.filter()
+      finished ← filtered.align()
+    } yield finished
 
   // FIXME: !!!
   def create(): ⇄[Analyzer] =
@@ -109,8 +109,9 @@ final class Analyzer private (val analysis: Analysis, val config: Config) {
 
   private def persistFilter(): ⇄[Analyzer] =
     for {
-      filtered ← Filter.filterSimilarEntries(temporalPath, analysis.threshold)(config)
-      _        ← Fasta(filtered.toNel.err("Filter returns empty list")).toFile(filteredPath) // FIXME
+      filtered  ← Filter.filterSimilarEntries(temporalPath, analysis.threshold)(config)
+      reference ← Fasta(referencePath)
+      _         ← Fasta(filtered <::: reference.entries).toFile(filteredPath) // FIXME
     } yield this
 
   private def persistAlignment(): ⇄[Analyzer] =

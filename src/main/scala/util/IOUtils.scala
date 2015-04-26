@@ -24,8 +24,8 @@ object IOUtils {
     EitherT(e) leftMap asThrowable
 
 
-  def execute(command: String, args: String*): ⇄[String] =
-    IO(Process(command, args)).map (_.!!).catchLeft
+  def execute(command: String): ⇄[String] =
+    IO(Process(command)).map (_.!!).catchLeft
 
 
   implicit class BufferedReaderOps(val reader: BufferedReader) extends AnyVal {
