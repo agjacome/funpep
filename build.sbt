@@ -3,24 +3,24 @@ organization := "es.uvigo.ei.sing"
 scalaVersion := "2.11.6"
 version      := "0.0.1-SNAPSHOT"
 
-libraryDependencies ++= Seq(
-  "org.scalaz"  %% "scalaz-core"       % "7.1.1" ,
-  "org.scalaz"  %% "scalaz-effect"     % "7.1.1" ,
-  "org.scalaz"  %% "scalaz-iteratee"   % "7.1.1" ,
-  "org.scalaz"  %% "scalaz-concurrent" % "7.1.1" ,
-
-  "org.http4s"  %% "http4s-dsl"         % "0.6.5" ,
-  "org.http4s"  %% "http4s-blazeserver" % "0.6.5" ,
-  "org.http4s"  %% "http4s-argonaut"    % "0.6.5" ,
-
-  "org.scalacheck" %% "scalacheck"  % "1.11.6" % "test" ,
-  "org.specs2"     %% "specs2-core" % "3.4"    % "test" ,
-
-  "org.scalaz"     %% "scalaz-scalacheck-binding" % "7.1.1"  % "test" exclude("org.scalacheck", "scalacheck_2.11") ,
-  "org.specs2"     %% "specs2-scalacheck"         % "3.4"    % "test" exclude("org.scalacheck", "scalacheck_2.11")
-)
-
 resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
+
+libraryDependencies ++= Seq(
+  "org.scalaz"  %% "scalaz-core"       % "7.1.2",
+  "org.scalaz"  %% "scalaz-effect"     % "7.1.2",
+  "org.scalaz"  %% "scalaz-iteratee"   % "7.1.2",
+  "org.scalaz"  %% "scalaz-concurrent" % "7.1.2",
+
+  "org.http4s"  %% "http4s-dsl"         % "0.8.1",
+  "org.http4s"  %% "http4s-blazeserver" % "0.8.1",
+  "org.http4s"  %% "http4s-argonaut"    % "0.8.1",
+
+  "org.scalacheck" %% "scalacheck"  % "1.12.4" % "test",
+  "org.specs2"     %% "specs2-core" % "3.6.1"  % "test",
+
+  "org.scalaz"     %% "scalaz-scalacheck-binding" % "7.1.2" % "test" exclude("org.scalacheck", "scalacheck_2.11"),
+  "org.specs2"     %% "specs2-scalacheck"         % "3.6.1" % "test" exclude("org.scalacheck", "scalacheck_2.11")
+)
 
 scalacOptions ++= Seq(
   "-deprecation",
@@ -45,12 +45,7 @@ scalacOptions in (Compile, console) ~= { _ filterNot Set(
   "-Xfatal-warnings", "-Ywarn-unused-import"
 )}
 
-// Faulty warts in some cases, will use "Warts.all" and explicitly suppress them
-// where required once WartRemover 0.13 is published (with its support for
-// Java's @SuppressWarnings annotation).
-wartremoverWarnings ++= Warts.allBut(
-  Wart.Any, Wart.NoNeedForMonad, Wart.Nothing
-)
+wartremoverWarnings ++= Warts.all
 
 initialCommands in console := """
   |import scalaz._
