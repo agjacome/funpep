@@ -16,22 +16,21 @@ import util.IOUtils._
 
 object Filter {
 
-  // TODO: clean up
-  def filterSimilarEntries(directory: Path, threshold: Double): ConfiguredT[⇄, List[FastaEntry]] = {
+  def filterSimilarEntries(directory: Path, threshold: Double): ConfiguredT[IOThrowable, List[FastaEntry]] = {
     lazy val files = FastaParser.fromDirectory(directory).liftM[ConfiguredT]
 
     // Type ascription required because Scala does not correctly infer it here
-    lazy val entries: ConfiguredT[⇄, List[(FastaEntry, Boolean)]] = files >>= (_ map {
+    lazy val entries: ConfiguredT[IOThrowable, List[(FastaEntry, Boolean)]] = files >>= (_ map {
       f ⇒ isEntrySimilarTo(f._2, f._1.entries.head, threshold).map((f._1.entries.head, _))
     } sequenceU)
 
     entries.map(_ collect { case (entry, true) ⇒ entry })
   }
 
-  def isEntrySimilarTo(fasta: Path, entry: FastaEntry, threshold: Double): ConfiguredT[⇄, Boolean] =
+  def isEntrySimilarTo(fasta: Path, entry: FastaEntry, threshold: Double): ConfiguredT[IOThrowable, Boolean] =
     Clustal.withDistanceMatrixOf(fasta)(isEntrySimilarEnough(entry, threshold))
 
-  def maxDistMatValue(distMat: Path, entry: FastaEntry): ⇄[Double] =
+  def maxDistMatValue(distMat: Path, entry: FastaEntry): IOThrowable[Double] =
     distMat.enumerateLines(findDistMatEntry(entry)) map { line ⇒
       val dist = line >>= { maxDistMatLineValue(_, entry) }
       dist \/> new IOException(s"Could not found maximum distance of ${entry.id} in $distMat")
@@ -42,13 +41,14 @@ object Filter {
     dists traverse (_.parseDouble.toOption) map (_.max)
   }
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.NoNeedForMonad"))
   def findDistMatEntry(entry: FastaEntry): IterateeT[IoExceptionOr[String], IO, Option[String]] =
     for {
       _ ← dropUntil[IoExceptionOr[String], IO](_ exists (_ startsWith entry.id))
       h ← head[IoExceptionOr[String], IO]
     } yield h.map(_.toOption).flatten
 
-  private def isEntrySimilarEnough(entry: FastaEntry, threshold: Double)(distMat: Path): ⇄[Boolean] =
+  private def isEntrySimilarEnough(entry: FastaEntry, threshold: Double)(distMat: Path): IOThrowable[Boolean] =
     (maxDistMatValue(distMat, entry) <* distMat.delete) map { _ >= threshold }
 
 }

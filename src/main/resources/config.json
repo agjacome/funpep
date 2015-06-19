@@ -1,6 +1,6 @@
 {
   "clustalo":     "/usr/bin/clustalo",
-  "nullPath":     "/dev/null",
   "databasePath": "db/store",
-  "temporalPath": "db/temp"
+  "temporalPath": "db/temp",
+  "jobQueuePath": "db/job_queue"
 }

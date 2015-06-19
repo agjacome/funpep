@@ -11,22 +11,23 @@ import util.IOUtils._
 
 object Clustal {
 
-  def distanceMatrix(input: Path, alignment: Path, distmat: Path): ConfiguredT[⇄, String] =
+  val devNull = "/dev/null".toPath
+
+  def distanceMatrix(input: Path, alignment: Path, distmat: Path): ConfiguredT[IOThrowable, String] =
     ConfiguredT(config ⇒ execute(
       s"${config.clustalo} -i $input -o $alignment --distmat-out=$distmat --percent-id --full --force"
     ))
 
-  // TODO: clean up
-  def withDistanceMatrixOf[A](input: Path)(f: Path ⇒ ⇄[A]): ConfiguredT[⇄, A] = {
-    lazy val distMat = input + ".distmat"
-    lazy val written = ConfiguredT(config ⇒ distanceMatrix(input, config.nullPath, distMat)(config))
-    lazy val mapped  = f(distMat).liftM[ConfiguredT]
+  def withDistanceMatrixOf[A](input: Path)(f: Path ⇒ IOThrowable[A]): ConfiguredT[IOThrowable, A] = {
+    val distMat = input + ".distmat"
+    def written = distanceMatrix(input, devNull, distMat)
+    def mapped  = f(distMat).liftM[ConfiguredT]
     written *> mapped
   }
 
-  def guideTree(input: Path, alignment: Path, tree: Path): ConfiguredT[⇄, String] =
-    ConfiguredT(config ⇒ execute(
-      s"${config.clustalo} -i $input -o $alignment --guidetree-out=$tree --full --force"
-    ))
+  def guideTree(input: Path, alignment: Path, tree: Path): ConfiguredT[IOThrowable, String] =
+    ConfiguredT {
+      config ⇒ execute(s"${config.clustalo} -i $input -o $alignment --guidetree-out=$tree --full --force")
+    }
 
 }

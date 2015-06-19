@@ -16,19 +16,19 @@ import util.JsonUtils._
 
 final case class Config (
   clustalo:     Path,
-  nullPath:     Path,
   databasePath: Path,
-  temporalPath: Path
+  temporalPath: Path,
+  jobQueuePath: Path
 )
 
 object Config {
 
   implicit val ConfigDecodeJson: DecodeJson[Config] =
-    jdecode4L(Config.apply)("clustalo", "nullPath", "databasePath", "temporalPath")
+    jdecode4L(Config.apply)("clustalo", "databasePath", "temporalPath", "jobQueuePath")
 
   // aliases  of ConfigParser.from*
-  def apply(str:  String): Throwable ∨ Config = ConfigParser.fromJsonString(str)
-  def apply(file: Path  ): ⇄[Config]          = ConfigParser.fromJsonFile(file)
+  def apply(str:  String): Throwable ∨ Config  = ConfigParser.fromJsonString(str)
+  def apply(file: Path  ): IOThrowable[Config] = ConfigParser.fromJsonFile(file)
 
   object syntax {
 
@@ -53,7 +53,7 @@ object ConfigParser {
   def fromJsonString(str: String): Throwable ∨ Config =
     str.decodeEither[Config] leftMap { err ⇒ new IllegalArgumentException(err) }
 
-  def fromJsonFile(file: Path): ⇄[Config] =
+  def fromJsonFile(file: Path): IOThrowable[Config] =
     file.contentsAsString >>= { str ⇒ fromJsonString(str).point[IO] }
 
 }

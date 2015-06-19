@@ -15,21 +15,21 @@ import util.IOUtils._
 import util.JsonUtils._
 
 
-final case class Analysis (
-  uuid:        UUID,
-  status:      Analysis.Status,
+final case class Job (
+  id:          UUID,
+  status:      Job.Status,
   email:       Email,
   threshold:   Double,
   annotations: Map[FastaEntry.ID, String]
 ) {
 
-  // aliases of AnalysisPrinter.to*
-  def toJsonString: String            = AnalysisPrinter.toJsonString(this)
-  def toJsonFile(file: Path): ⇄[Unit] = AnalysisPrinter.toJsonFile(file)(this)
+  // aliases of JobPrinter.to*
+  def toJsonString: String = JobPrinter.toJsonString(this)
+  def toJsonFile(file: Path): IOThrowable[Unit] = JobPrinter.toJsonFile(file)(this)
 
 }
 
-object Analysis {
+object Job {
 
   sealed trait Status
   case object Created  extends Status
@@ -47,7 +47,7 @@ object Analysis {
         case "started"  ⇒ Started.some
         case "finished" ⇒ Finished.some
         case "failed"   ⇒ Failed.some
-        case _          ⇒ none
+        case _          ⇒ none[Status]
       }
 
     implicit val StatusEqual: Equal[Status] = Equal.equalA
@@ -61,33 +61,34 @@ object Analysis {
 
   }
 
-  implicit val AnalysisCodecJson: CodecJson[Analysis] =
-    casecodec5(Analysis.apply, Analysis.unapply)("uuid", "status", "email", "threshold", "annotations")
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Nothing", "org.brianmckenna.wartremover.warts.Any"))
+  implicit val JobCodecJson: CodecJson[Job] =
+    casecodec5(Job.apply, Job.unapply)("id", "status", "email", "threshold", "annotations")
 
-  // aliases of AnalysisParser.from*
-  def apply(str:  String): Throwable ∨ Analysis = AnalysisParser.fromJsonString(str)
-  def apply(file: Path  ): ⇄[Analysis] = AnalysisParser.fromJsonFile(file)
+  // aliases of JobParser.from*
+  def apply(str:  String): Throwable ∨ Job  = JobParser.fromJsonString(str)
+  def apply(file: Path  ): IOThrowable[Job] = JobParser.fromJsonFile(file)
 
 }
 
-object AnalysisParser {
+object JobParser {
 
-  def fromJsonString(str: String): Throwable ∨ Analysis =
-    str.decodeEither[Analysis] leftMap { err ⇒ new IllegalArgumentException(err) }
+  def fromJsonString(str: String): Throwable ∨ Job =
+    str.decodeEither[Job] leftMap { err ⇒ new IllegalArgumentException(err) }
 
-  def fromJsonFile(file: Path): ⇄[Analysis] =
+  def fromJsonFile(file: Path): IOThrowable[Job] =
     file.contentsAsString >>= { str ⇒ fromJsonString(str).point[IO] }
 
 }
 
-object AnalysisPrinter {
+object JobPrinter {
 
   import \/.{ fromTryCatchThrowable ⇒ tryCatch }
 
-  def toJsonString(s: ⇒ Analysis): String =
-    implicitly[EncodeJson[Analysis]].encode(s).nospaces
+  def toJsonString(s: ⇒ Job): String =
+    implicitly[EncodeJson[Job]].encode(s).nospaces
 
-  def toJsonFile(file: Path)(s: ⇒ Analysis): ⇄[Unit] =
+  def toJsonFile(file: Path)(s: ⇒ Job): IOThrowable[Unit] =
     file.openIOWriter.bracket(_.closeIO) {
       writer ⇒ tryCatch[Unit, Throwable](writer.write(toJsonString(s))).point[IO]
     }

@@ -15,7 +15,7 @@ import util.IOUtils._
 
 final case class FastaEntry (id: FastaEntry.ID, seq: CaseInsensitive[String]) {
 
-  lazy val toEntryString: String = ">" + id + ¶ + seq.original.grouped(70).mkString(¶)
+  lazy val toEntryString: String = ">" + id + nl + seq.original.grouped(70).mkString(nl)
 
 }
 
@@ -37,7 +37,7 @@ final case class Fasta (entries: NonEmptyList[FastaEntry]) {
 
   import Fasta.FastaInstances
 
-  lazy val toFastaString: String = entries.map(_.toEntryString).toList.mkString(¶)
+  lazy val toFastaString: String = entries.map(_.toEntryString).toList.mkString(nl)
 
   def filter(cond: FastaEntry ⇒ Boolean): Option[Fasta] =
     entries.toList.filter(cond).toNel.map(Fasta.apply)
@@ -49,8 +49,8 @@ final case class Fasta (entries: NonEmptyList[FastaEntry]) {
     entries.toStream.exists(cond)
 
   // aliases for FastaPrinter.to*
-  def toFile   (file: Path): ⇄[Unit] = FastaPrinter.toFile(file)(this)
-  def toNewFile(dir:  Path): ⇄[Unit] = FastaPrinter.toNewFile(dir)(this)
+  def toFile   (file: Path): IOThrowable[Unit] = FastaPrinter.toFile(file)(this)
+  def toNewFile(dir:  Path): IOThrowable[Unit] = FastaPrinter.toNewFile(dir)(this)
 
 }
 
@@ -61,7 +61,7 @@ object Fasta {
 
   // aliases for FastaParser.from*
   def apply(str:  String): Throwable ∨ Fasta = FastaParser.fromString(str)
-  def apply(file: Path  ): ⇄[Fasta]  = FastaParser.fromFile(file)
+  def apply(file: Path  ): IOThrowable[Fasta]  = FastaParser.fromFile(file)
 
   implicit val FastaInstances = new Equal[Fasta] with Show[Fasta] with Semigroup[Fasta] {
     override def equal(f1: Fasta, f2: Fasta): Boolean =
@@ -91,10 +91,10 @@ object FastaParser extends RegexParsers {
   lazy val fromString: String         ⇒ Throwable ∨ Fasta = parseString ∘ validate
   lazy val fromReader: BufferedReader ⇒ Throwable ∨ Fasta = parseReader ∘ validate
 
-  def fromFile(file: Path): ⇄[Fasta] =
+  def fromFile(file: Path): IOThrowable[Fasta] =
     EitherT { file.openIOReader.bracket(_.closeIO)(r ⇒ fromReader(r).point[IO]).catchLeft map (_.join) }
 
-  def fromDirectory(directory: Path): ⇄[List[(Fasta, Path)]] =
+  def fromDirectory(directory: Path): IOThrowable[List[(Fasta, Path)]] =
     directory.files("*.{fasta,fas,fna,faa,ffn,frna}") >>= {
       files ⇒ (files map fromFile).sequenceU map { _.zip(files) }
     }
@@ -111,13 +111,13 @@ object FastaPrinter {
   lazy val toWriter: BufferedWriter ⇒ Fasta ⇒ Throwable ∨ Unit =
     writer ⇒ fasta ⇒ tryCatch[Unit, Throwable] { writer.write(fasta.toFastaString) }
 
-  def toFile(file: Path)(fasta: ⇒ Fasta): ⇄[Unit] =
+  def toFile(file: Path)(fasta: ⇒ Fasta): IOThrowable[Unit] =
     file.openIOWriter.bracket(_.closeIO) { toWriter(_)(fasta).point[IO] }
 
-  def toNewFile(directory: Path)(fasta: ⇒ Fasta): ⇄[Unit] =
+  def toNewFile(directory: Path)(fasta: ⇒ Fasta): IOThrowable[Unit] =
     toFile(directory / uuid.toString + ".fasta")(fasta)
 
-  def toDirectory(directory: Path)(fastas: ⇒ List[Fasta]): ⇄[Unit] =
+  def toDirectory(directory: Path)(fastas: ⇒ List[Fasta]): IOThrowable[Unit] =
     fastas.map(f ⇒ toNewFile(directory)(f)).sequenceU.map(_ ⇒ ())
 
 }

@@ -28,7 +28,7 @@ class `FastaEntry Specification` extends BaseSpec { def is = s2"""
   def testShowInstance = ∀[FastaEntry] { e ⇒ e.shows ≟ entryToString(e) }
 
   private def entryToString(entry: FastaEntry): String =
-    ">" + entry.id + ¶ + entry.seq.original.grouped(70).mkString(¶)
+    ">" + entry.id + nl + entry.seq.original.grouped(70).mkString(nl)
 
 }
 
@@ -55,7 +55,7 @@ class `Fasta Specification` extends BaseSpec { def is = s2"""
   def testShowInstance = ∀[Fasta] { f ⇒ f.shows ≟ fastaToString(f) }
 
   private def fastaToString(fasta: Fasta): String =
-    fasta.entries.map(_.shows).toList.mkString(¶)
+    fasta.entries.map(_.shows).toList.mkString(nl)
 
 }
 
@@ -81,7 +81,7 @@ class `FastaParser Specification` extends BaseSpec { def is = s2"""
   }
 
   def testFromFile = ∀[Fasta] { fasta ⇒
-    val file = newTemporalFile(".fasta")
+    val file = temporalFile(".fasta")
 
     lazy val write = writeFasta(file, fasta)
     lazy val read  = FastaParser.fromFile(file) exists {
@@ -92,10 +92,10 @@ class `FastaParser Specification` extends BaseSpec { def is = s2"""
   }
 
   def testFromDirectory = ∀[List[Fasta]] { fastas ⇒
-    val directory = newTemporalDirectory()
+    val directory = temporalDirectory()
 
     lazy val write = fastas map {
-      fasta ⇒ writeFasta(newTemporalFileIn(directory, ".fasta"), fasta)
+      fasta ⇒ writeFasta(temporalFileIn(directory, ".fasta"), fasta)
     } sequence
 
     lazy val read = FastaParser.fromDirectory(directory) exists {

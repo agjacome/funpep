@@ -53,19 +53,19 @@ trait BaseSpec extends Specification with ScalaCheck with Arbitraries with Prett
     Prop.exists(property)
 
 
-  def newTemporalFile(suffix: String): Path = {
+  def temporalFile(suffix: String): Path = {
     val path = Files.createTempFile("funpep-test-", suffix)
     path.toFile.deleteOnExit()
     path
   }
 
-  def newTemporalFileIn(dir: Path, suffix: String): Path = {
+  def temporalFileIn(dir: Path, suffix: String): Path = {
     val path = Files.createTempFile(dir, "funpep-test-", suffix)
     path.toFile.deleteOnExit()
     path
   }
 
-  def newTemporalDirectory(): Path = {
+  def temporalDirectory(): Path = {
     val path = Files.createTempDirectory("funpep-testdir-")
     path.toFile.deleteOnExit()
     path

@@ -1,7 +1,7 @@
 package es.uvigo.ei.sing.funpep
 package util
 
-import java.io.{ BufferedReader, BufferedWriter, IOException }
+import java.io.{ BufferedReader, BufferedWriter, Closeable, InputStream, IOException, OutputStream }
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file._
 import java.util.UUID
@@ -18,19 +18,23 @@ import scalaz.iteratee.Iteratee._
 
 object IOUtils {
 
-  type ⇄[A] = EitherT[IO, Throwable, A]
+  type IOEitherT[A, B] = EitherT[IO, A, B]
+  type IOThrowable[A]  = IOEitherT[Throwable, A]
 
-  implicit def EitherIOToEitherTIO[A, B](e: ⇒ IO[A ∨ B])(implicit asThrowable: A ⇒ Throwable): ⇄[B] =
-    EitherT(e) leftMap asThrowable
+  implicit def IOEitherToIOThrowable[A, B](e: ⇒ IO[A ∨ B])(implicit asT: A ⇒ Throwable): IOThrowable[B] =
+    EitherT(e) leftMap asT
 
 
-  def execute(command: String): ⇄[String] =
+  def execute(command: String): IOThrowable[String] =
     IO(Process(command)).map (_.!!).catchLeft
 
 
+  implicit class CloseableOps(val closeable: Closeable) extends AnyVal {
+    def closeIO: IO[Unit] = closeable.close.point[IO]
+  }
+
   implicit class BufferedReaderOps(val reader: BufferedReader) extends AnyVal {
 
-    def closeIO:    IO[Unit]           = reader.close.point[IO]
     def readLineIO: IO[Option[String]] = Option(reader.readLine).point[IO]
 
     def enumerateLines: EnumeratorT[IoExceptionOr[String], IO] =
@@ -50,7 +54,6 @@ object IOUtils {
 
   implicit class BufferedWriterOps(val writer: BufferedWriter) extends AnyVal {
 
-    def closeIO: IO[Unit] = writer.close.point[IO]
     def writeIO(str: String): IO[Unit] = writer.write(str).point[IO]
 
     def bracket[A](after: ⇒ BufferedWriter ⇒ Unit)(during: ⇒ BufferedWriter ⇒ A): A = {
@@ -67,17 +70,17 @@ object IOUtils {
     def /(p: String): Path = path.resolve(p)
     def +(s: String): Path = Paths.get(path.toString + s)
 
-    def create: ⇄[Unit] =
+    def create: IOThrowable[Unit] =
       IO(Files.createFile(path)) map (_ ⇒ ()) catchLeft
 
-    def createDir: ⇄[Unit] =
+    def createDir: IOThrowable[Unit] =
       IO(Files.createDirectories(path)) map (_ ⇒ ()) catchLeft
 
-    def delete: ⇄[Unit] =
+    def delete: IOThrowable[Unit] =
       IO(Files.deleteIfExists(path)) map (_ ⇒ ()) catchLeft
 
-    // TODO: !!!
-    def deleteDir: ⇄[Unit] =
+    // TODO: Java's FileVisitor is quite cumbersome, find a simpler way
+    def deleteDir: IOThrowable[Unit] =
       IO(Files.walkFileTree(path, new SimpleFileVisitor[Path]() {
         override def visitFile(file: Path, attrs: attribute.BasicFileAttributes): FileVisitResult = {
           Files.delete(file)
@@ -90,18 +93,23 @@ object IOUtils {
         }
       })) map(_ ⇒ ()) catchLeft
 
-    def openIOReader: IO[BufferedReader] = IO(Files.newBufferedReader(path, UTF_8))
-    def openIOWriter: IO[BufferedWriter] = IO(Files.newBufferedWriter(path, UTF_8))
+    def openIOIStream: IO[InputStream]    = IO(Files.newInputStream(path))
+    def openIOOStream: IO[OutputStream]   = IO(Files.newOutputStream(path))
+    def openIOReader:  IO[BufferedReader] = IO(Files.newBufferedReader(path, UTF_8))
+    def openIOWriter:  IO[BufferedWriter] = IO(Files.newBufferedWriter(path, UTF_8))
 
     def enumerateLines[A](action: IterateeT[IoExceptionOr[String], IO, A]): IO[A] =
       openIOReader.bracket(_.closeIO) { reader ⇒ (action &= reader.enumerateLines).run }
 
-    def contentsAsString: ⇄[String] =
+    def contentsAsList: IOThrowable[List[String]] =
       enumerateLines(consume[IoExceptionOr[String], IO, List]) map {
-        _.traverse(_.toOption).map(_ mkString ¶) \/> new IOException(s"Could not read contents of $path")
+        _.traverse(_.toOption) \/> new IOException(s"Could not read contents of $path")
       }
 
-    def files(glob: String): ⇄[List[Path]] =
+    def contentsAsString: IOThrowable[String] =
+      contentsAsList map { _ mkString nl }
+
+    def files(glob: String): IOThrowable[List[Path]] =
       IO(Files.newDirectoryStream(path, glob)).bracket(_.close.point[IO]) {
         files ⇒ files.iterator.asScala.toList.point[IO]
       } catchLeft
