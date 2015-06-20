@@ -1,6 +1,6 @@
 <configuration scan="false">
 
-    <property name="LOG_FILE" value="logs/funpep" />
+    <property name="LOG_FILE" value="log/funpep" />
 
     <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
         <target>System.err</target>
