@@ -1,22 +1,16 @@
 sbt
+
 db/store/*
 db/temp/*
+!db/store/.gitkeep
+!db/temp/.gitkeep
 
-.idea
-*.cache
-*.class
-*.log
+log/*
+!log/.gitkeep
 
-.scala_dependencies
-.worksheet
+project/*
+!project/build.properties
+!project/plugins.sbt
 
-.history/
-.cache/
-.history/
-.lib/
-dist/*
+dist/
 target/
-lib_managed/
-src_managed/
-project/boot/
-project/plugins/project/
