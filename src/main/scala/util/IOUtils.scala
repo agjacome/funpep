@@ -9,6 +9,8 @@ import java.util.UUID
 import scala.collection.JavaConverters._
 import scala.sys.process.Process
 
+import com.typesafe.scalalogging.LazyLogging
+
 import scalaz._
 import scalaz.Scalaz._
 import scalaz.effect._
@@ -16,7 +18,7 @@ import scalaz.iteratee._
 import scalaz.iteratee.Iteratee._
 
 
-object IOUtils {
+object IOUtils extends LazyLogging {
 
   type IOEitherT[A, B] = EitherT[IO, A, B]
   type IOThrowable[A]  = IOEitherT[Throwable, A]
@@ -25,8 +27,10 @@ object IOUtils {
     EitherT(e) leftMap asT
 
 
-  def execute(command: String): IOThrowable[String] =
+  def execute(command: String): IOThrowable[String] = {
+    logger.info(s"Executing command: $command")
     IO(Process(command)).map (_.!!).catchLeft
+  }
 
 
   implicit class CloseableOps(val closeable: Closeable) extends AnyVal {

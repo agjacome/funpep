@@ -6,15 +6,15 @@ import java.util.UUID
 import scalaz.Scalaz._
 import scalaz.effect.IO
 
+import com.typesafe.scalalogging.LazyLogging
+
 import data._
 import contrib.Clustal
 import util.IOUtils._
 
 
 // TODO: Handle failure cases (set status = Job.Failed)
-// TODO: Log info of every action. Use log to display errors instead of
-// sys.error and printStackTrace
-final class Analyzer private (val config: Config) {
+final class Analyzer private (val config: Config) extends LazyLogging {
 
   @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Var"))
   @volatile private var running: Boolean = false
@@ -24,8 +24,8 @@ final class Analyzer private (val config: Config) {
       while (running) {
         val id = AnalyzerQueue.dequeue
         process(id).run.unsafePerformIO valueOr { error ⇒
-          error.printStackTrace()
-          sys.error(s"Unexpected error while analyzing job $id")
+          logger.error(s"Unexpected error while analzyzing job $id", error)
+          sys.exit(-1)
         }
       }
   })
@@ -34,7 +34,7 @@ final class Analyzer private (val config: Config) {
   def stop():  Unit = { running = false; loop.join()  }
 
   def analyze(job: Job, comparing: Fasta, reference: Fasta): IOThrowable[Unit] =
-    create(job, comparing, reference)             *>
+    create(job, comparing, reference)           *>
     IO(AnalyzerQueue.enqueue(job.id)).catchLeft *>
     updateStatus(job.id, Job.Queued)
 
@@ -50,13 +50,15 @@ final class Analyzer private (val config: Config) {
   private def database(id: UUID): Path = config.databasePath / id.toString
   private def temporal(id: UUID): Path = config.temporalPath / id.toString
 
-  private def process(id: UUID): IOThrowable[Unit] =
+  private def process(id: UUID): IOThrowable[Unit] = {
+    logger.info(s"Processing job $id")
     updateStatus(id, Job.Started) *>
     split(id)                     *>
     filter(id)                    *>
     align(id)                     *>
     temporal(id).deleteDir        *>
     updateStatus(id, Job.Finished)
+  }
 
   private def updateStatus(id: UUID, status: Job.Status): IOThrowable[Unit] =
     Job(analysis(id)).map(_.copy(status = status)) >>= { _.toJsonFile(analysis(id)) }
@@ -79,12 +81,14 @@ final class Analyzer private (val config: Config) {
   private def align(id: UUID): IOThrowable[Unit] =
     Clustal.guideTree(filtered(id), alignment(id), guidetree(id))(config) map { _ ⇒ () }
 
-  private def create(job: Job, comparing: Fasta, reference: Fasta): IOThrowable[Unit] =
+  private def create(job: Job, comparing: Fasta, reference: Fasta): IOThrowable[Unit] = {
+    logger.info(s"Creating files for job ${job.id}")
     database(job.id).createDir                                  *>
     temporal(job.id).createDir                                  *>
     job.copy(status = Job.Created).toJsonFile(analysis(job.id)) *>
     comparing.toFile(this.comparing(job.id))                    *>
     reference.toFile(this.reference(job.id))
+  }
 
   private object AnalyzerQueue {
 
@@ -95,8 +99,8 @@ final class Analyzer private (val config: Config) {
     private val queue: Queue[UUID] = {
       val io    = config.jobQueuePath.contentsAsList
       val lines = io.run.unsafePerformIO valueOr { error ⇒
-        error.printStackTrace()
-        sys.error("Could not correctly read Job queue")
+        logger.error("Could not correctly read Job queue", error)
+        sys.exit(-1)
       }
 
       new Queue(lines.filterNot(_.isEmpty).map(UUID.fromString).asJava)
@@ -122,8 +126,9 @@ final class Analyzer private (val config: Config) {
       }
 
       write.run.unsafePerformIO valueOr { error ⇒
-        error.printStackTrace()
-        sys.error(s"Could not correctly write Job queue${nl}Current queue:${nl}${lines}")
+        logger.error("Could not correctly write Job queue", error)
+        logger.error(s"Job queue before fail:${nl}${lines}")
+        sys.exit(-1)
       }
     }
 

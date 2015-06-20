@@ -14,7 +14,9 @@ libraryDependencies ++= Seq(
   "org.http4s"  %% "http4s-dsl"         % "0.8.1",
   "org.http4s"  %% "http4s-blazeserver" % "0.8.1",
   "org.http4s"  %% "http4s-argonaut"    % "0.8.1",
-  "org.http4s"  %% "http4s-twirl"       % "0.8.1",
+
+  "com.typesafe.scala-logging" %% "scala-logging"   % "3.1.0" ,
+  "ch.qos.logback"             %  "logback-classic" % "1.1.3" ,
 
   "org.scalacheck" %% "scalacheck"  % "1.12.4" % "test",
   "org.specs2"     %% "specs2-core" % "3.6.1"  % "test",
@@ -38,7 +40,7 @@ scalacOptions ++= Seq(
   "-Yno-adapted-args",
   "-Ywarn-dead-code",
   "-Ywarn-numeric-widen",
-  // "-Ywarn-unused-import", // disabled because twirl
+  "-Ywarn-unused-import",
   "-Ywarn-value-discard"
 )
 
@@ -55,5 +57,3 @@ initialCommands in console := """
 """.stripMargin
 
 shellPrompt := { _ ⇒ "funpep » " }
-
-lazy val funpep = (project in file(".")).enablePlugins(SbtTwirl)
