@@ -1,0 +1,11 @@
+{
+  "http_host" : "localhost",
+  "http_port" : 8080,
+  "http_path" : "/funpep",
+
+  "clustalo"  : "/usr/bin/clustalo",
+
+  "database"  : "database",
+  "temporal"  : "database/temporal",
+  "job_queue" : "database/job_queue"
+}

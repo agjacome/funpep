@@ -1,12 +1,6 @@
 sbt
 
-db/store/*
-db/temp/*
-!db/store/.gitkeep
-!db/temp/.gitkeep
-
-log/*
-!log/.gitkeep
+database
 
 project/*
 !project/build.properties

@@ -1,6 +1,0 @@
-{
-  "clustalo":     "/usr/bin/clustalo",
-  "databasePath": "db/store",
-  "temporalPath": "db/temp",
-  "jobQueuePath": "db/job_queue"
-}

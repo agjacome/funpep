@@ -13,22 +13,44 @@ import argonaut.Argonaut._
 import util.IOUtils._
 import util.JsonUtils._
 
-
+// TODO: Replace JSON file with HOCON or Java Properties
 final case class Config (
-  clustalo:     Path,
-  databasePath: Path,
-  temporalPath: Path,
-  jobQueuePath: Path
+  httpHost: String,
+  httpPort: Int,
+  httpPath: String,
+  clustalo: String,
+  database: Path,
+  temporal: Path,
+  jobQueue: Path
 )
 
 object Config {
 
   implicit val ConfigDecodeJson: DecodeJson[Config] =
-    jdecode4L(Config.apply)("clustalo", "databasePath", "temporalPath", "jobQueuePath")
+    jdecode7L(Config.apply)(
+      "http_host",
+      "http_port",
+      "http_path",
+      "clustalo",
+      "database",
+      "temporal",
+      "job_queue"
+    )
 
   // aliases  of ConfigParser.from*
   def apply(str:  String): Throwable ∨ Config  = ConfigParser.fromJsonString(str)
   def apply(file: Path  ): IOThrowable[Config] = ConfigParser.fromJsonFile(file)
+
+  def default: Config =
+    Config(
+      httpHost = "localhost",
+      httpPort = 8080,
+      httpPath = "/funpep",
+      clustalo = "clustalo",
+      database = "database".toPath.toAbsolutePath,
+      temporal = "database/temporal".toPath.toAbsolutePath,
+      jobQueue = "database/job_queue".toPath.toAbsolutePath
+    )
 
   object syntax {
 
@@ -46,9 +68,6 @@ object Config {
 }
 
 object ConfigParser {
-
-  // TODO: move to top-level, call fromJsonFile there
-  val file: Path = (property("config.file") | resource("config.json").getPath).toPath
 
   def fromJsonString(str: String): Throwable ∨ Config =
     str.decodeEither[Config] leftMap { err ⇒ new IllegalArgumentException(err) }

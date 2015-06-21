@@ -22,16 +22,19 @@ final class Analyzer private (val config: Config) extends LazyLogging {
   private val loop = new Thread(new Runnable {
     override def run: Unit =
       while (running) {
-        val id = AnalyzerQueue.dequeue
-        process(id).run.unsafePerformIO valueOr { error ⇒
-          logger.error(s"Unexpected error while analzyzing job $id", error)
-          sys.exit(-1)
+        AnalyzerQueue.dequeue foreach { id ⇒
+          process(id).run.unsafePerformIO() valueOr { error ⇒
+            logger.error(s"Unexpected error while analzyzing job $id", error)
+            sys.exit(-1)
+          }
         }
       }
   })
 
-  def start(): Unit = { running = true;  loop.start() }
-  def stop():  Unit = { running = false; loop.join()  }
+  def isRunning: Boolean = running
+
+  def start(): Unit = if (!isRunning) { running = true;  loop.start() }
+  def stop():  Unit = if (isRunning)  { running = false; loop.join()  }
 
   def analyze(job: Job, comparing: Fasta, reference: Fasta): IOThrowable[Unit] =
     create(job, comparing, reference)           *>
@@ -47,8 +50,8 @@ final class Analyzer private (val config: Config) extends LazyLogging {
 
   def status(id: UUID): IOThrowable[Job.Status] = Job(analysis(id)).map(_.status)
 
-  private def database(id: UUID): Path = config.databasePath / id.toString
-  private def temporal(id: UUID): Path = config.temporalPath / id.toString
+  private def database(id: UUID): Path = config.database / id.toString
+  private def temporal(id: UUID): Path = config.temporal / id.toString
 
   private def process(id: UUID): IOThrowable[Unit] = {
     logger.info(s"Processing job $id")
@@ -92,13 +95,13 @@ final class Analyzer private (val config: Config) extends LazyLogging {
 
   private object AnalyzerQueue {
 
-    import java.util.concurrent.{ LinkedBlockingQueue ⇒ Queue }
+    import java.util.concurrent.{ LinkedBlockingQueue ⇒ Queue, TimeUnit }
     import scala.collection.JavaConverters._
 
     // FIXME: mutable queue & unsafePerformIO, can we do better?
     private val queue: Queue[UUID] = {
-      val io    = config.jobQueuePath.contentsAsList
-      val lines = io.run.unsafePerformIO valueOr { error ⇒
+      val io    = config.jobQueue.contentsAsList
+      val lines = io.run.unsafePerformIO() valueOr { error ⇒
         logger.error("Could not correctly read Job queue", error)
         sys.exit(-1)
       }
@@ -111,9 +114,9 @@ final class Analyzer private (val config: Config) extends LazyLogging {
       updateQueueFile()
     }
 
-    def dequeue: UUID = {
-      val id = queue.take()
-      updateQueueFile()
+    def dequeue: Option[UUID] = {
+      val id = Option(queue.poll(5L, TimeUnit.SECONDS))
+      id.foreach(_ ⇒ updateQueueFile())
       id
     }
 
@@ -121,11 +124,11 @@ final class Analyzer private (val config: Config) extends LazyLogging {
     // level. enqueue/dequeue should also return that instead of Unit.
     private def updateQueueFile(): Unit = {
       val lines = queue.asScala mkString nl
-      val write = config.jobQueuePath.openIOWriter.bracket(_.closeIO) {
+      val write = config.jobQueue.openIOWriter.bracket(_.closeIO) {
         _.writeIO(lines).catchLeft
       }
 
-      write.run.unsafePerformIO valueOr { error ⇒
+      write.run.unsafePerformIO() valueOr { error ⇒
         logger.error("Could not correctly write Job queue", error)
         logger.error(s"Job queue before fail:${nl}${lines}")
         sys.exit(-1)
