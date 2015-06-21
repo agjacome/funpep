@@ -33,8 +33,8 @@ final class Analyzer private (val config: Config) extends LazyLogging {
 
   def isRunning: Boolean = running
 
-  def start(): Unit = if (!isRunning) { running = true;  loop.start() }
-  def stop():  Unit = if (isRunning)  { running = false; loop.join()  }
+  def start(): Unit = this.synchronized { if (!isRunning) { running = true;  loop.start() } }
+  def stop():  Unit = this.synchronized { if (isRunning)  { running = false; loop.join()  } }
 
   def analyze(job: Job, comparing: Fasta, reference: Fasta): IOThrowable[Unit] =
     create(job, comparing, reference)           *>
