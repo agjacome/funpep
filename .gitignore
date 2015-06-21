@@ -1,10 +1,10 @@
 sbt
 
-database
-
 project/*
 !project/build.properties
 !project/plugins.sbt
 
+log/
 dist/
 target/
+database/
