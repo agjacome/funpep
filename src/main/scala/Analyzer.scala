@@ -41,6 +41,8 @@ final class Analyzer private (val config: Config) extends LazyLogging {
     IO(AnalyzerQueue.enqueue(job.id)).catchLeft *>
     updateStatus(job.id, Job.Queued)
 
+  def queueSize: Int = AnalyzerQueue.queue.size()
+
   def analysis (id: UUID): Path = database(id) / "analysis.json"
   def comparing(id: UUID): Path = database(id) / "comparing.fasta"
   def reference(id: UUID): Path = database(id) / "reference.fasta"
@@ -99,7 +101,7 @@ final class Analyzer private (val config: Config) extends LazyLogging {
     import scala.collection.JavaConverters._
 
     // FIXME: mutable queue & unsafePerformIO, can we do better?
-    private val queue: Queue[UUID] = {
+    val queue: Queue[UUID] = {
       val io    = config.jobQueue.contentsAsList
       val lines = io.run.unsafePerformIO() valueOr { error ⇒
         logger.error("Could not correctly read Job queue", error)
