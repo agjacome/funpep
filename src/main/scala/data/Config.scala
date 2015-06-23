@@ -15,22 +15,26 @@ import util.JsonUtils._
 
 // TODO: Replace JSON file with HOCON or Java Properties
 final case class Config (
-  httpHost: String,
-  httpPort: Int,
-  httpPath: String,
-  clustalo: String,
-  database: Path,
-  temporal: Path,
-  jobQueue: Path
+  httpHost:   String,
+  httpPort:   Int,
+  httpPath:   String,
+  httpDigest: Boolean,
+  httpGzip:   Boolean,
+  clustalo:   String,
+  database:   Path,
+  temporal:   Path,
+  jobQueue:   Path
 )
 
 object Config {
 
   implicit val ConfigDecodeJson: DecodeJson[Config] =
-    jdecode7L(Config.apply)(
+    jdecode9L(Config.apply)(
       "http_host",
       "http_port",
       "http_path",
+      "http_digest",
+      "http_gzip",
       "clustalo",
       "database",
       "temporal",
@@ -43,13 +47,15 @@ object Config {
 
   def default: Config =
     Config(
-      httpHost = "localhost",
-      httpPort = 8080,
-      httpPath = "/funpep",
-      clustalo = "clustalo",
-      database = "database".toPath.toAbsolutePath,
-      temporal = "database/temporal".toPath.toAbsolutePath,
-      jobQueue = "database/job_queue".toPath.toAbsolutePath
+      httpHost   = "localhost",
+      httpPort   = 8080,
+      httpPath   = "/funpep",
+      httpDigest = true,
+      httpGzip   = true,
+      clustalo   = "clustalo",
+      database   = "database".toPath.toAbsolutePath,
+      temporal   = "database/temporal".toPath.toAbsolutePath,
+      jobQueue   = "database/job_queue".toPath.toAbsolutePath
     )
 
   object syntax {

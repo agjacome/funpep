@@ -1,7 +1,7 @@
 package es.uvigo.ei.sing.funpep
 package util
 
-import java.io.{ BufferedReader, BufferedWriter, Closeable, InputStream, IOException, OutputStream }
+import java.io._
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file._
 import java.util.UUID
@@ -35,6 +35,10 @@ object IOUtils extends LazyLogging {
 
   implicit class CloseableOps(val closeable: Closeable) extends AnyVal {
     def closeIO: IO[Unit] = closeable.close.point[IO]
+  }
+
+  implicit class InputStreamOps(val input: InputStream) extends AnyVal {
+    def toReader: BufferedReader = new BufferedReader(new InputStreamReader(input, UTF_8))
   }
 
   implicit class BufferedReaderOps(val reader: BufferedReader) extends AnyVal {

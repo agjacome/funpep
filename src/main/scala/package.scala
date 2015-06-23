@@ -1,12 +1,11 @@
 package es.uvigo.ei.sing
 
-import java.io.InputStream
+import java.io.{ BufferedReader, InputStream }
 import java.net.URL
 import java.nio.file.{ Path, Paths }
 import java.util.UUID
 
 import scalaz.CaseInsensitive
-import scalaz.syntax.std.option._
 
 package object funpep {
 
@@ -14,20 +13,11 @@ package object funpep {
 
   def uuid: UUID = UUID.randomUUID
 
-  def classLoader: ClassLoader =
-    Option(Thread.currentThread.getContextClassLoader) err {
-      "Context classloader is not set for the current thread"
-    }
+  def resource(name: String): Option[URL] =
+    Option(getClass.getResource(name))
 
-  def resource(name: String): URL =
-    Option(classLoader.getResource(name)) err {
-      s"Resource $name not found in classpath"
-    }
-
-  def resourceStream(name: String): InputStream =
-    Option(classLoader.getResourceAsStream(name)) err {
-      s"Resource $name not found in classpath"
-    }
+  def resourceStream(name: String): Option[InputStream] =
+    Option(getClass.getResourceAsStream(name))
 
   def property(name: String): Option[String] =
     Option(System.getProperty(name))

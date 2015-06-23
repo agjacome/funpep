@@ -1,9 +1,11 @@
 {
-  "http_host" : "localhost",
-  "http_port" : 8080,
-  "http_path" : "/funpep",
+  "http_host"   : "localhost",
+  "http_port"   : 8080,
+  "http_path"   : "/funpep",
+  "http_digest" : true,
+  "http_gzip"   : true,
 
-  "clustalo"  : "/usr/bin/clustalo",
+  "clustalo" : "/usr/bin/clustalo",
 
   "database"  : "database",
   "temporal"  : "database/temporal",

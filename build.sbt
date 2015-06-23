@@ -11,9 +11,9 @@ libraryDependencies ++= Seq(
   "org.scalaz"  %% "scalaz-iteratee"   % "7.1.2",
   "org.scalaz"  %% "scalaz-concurrent" % "7.1.2",
 
-  "org.http4s"  %% "http4s-dsl"         % "0.8.1",
-  "org.http4s"  %% "http4s-blazeserver" % "0.8.1",
-  "org.http4s"  %% "http4s-argonaut"    % "0.8.1",
+  "org.http4s"  %% "http4s-dsl"         % "0.8.2",
+  "org.http4s"  %% "http4s-blazeserver" % "0.8.2",
+  "org.http4s"  %% "http4s-argonaut"    % "0.8.2",
 
   "com.typesafe.scala-logging" %% "scala-logging"   % "3.1.0" ,
   "ch.qos.logback"             %  "logback-classic" % "1.1.3" ,
@@ -57,3 +57,11 @@ initialCommands in console := """
 """.stripMargin
 
 shellPrompt := { _ ⇒ "funpep » " }
+
+// sbt-web:
+enablePlugins(SbtWeb)
+
+pipelineStages := Seq(digest, gzip, rjs)
+
+WebKeys.packagePrefix in Assets := "assets/"
+(managedClasspath in Runtime) += (packageBin in Assets).value
