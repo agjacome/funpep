@@ -12,7 +12,7 @@ import org.http4s.server._
 import com.typesafe.scalalogging.LazyLogging
 
 
-final class HttpService (
+final class ApplicationService (
   val assetsController:   AssetsController,
   val analyzerController: AnalyzerController
 ) extends LazyLogging {
@@ -44,3 +44,9 @@ final class HttpService (
 
 }
 
+object ApplicationService {
+
+  def apply(assetsController: AssetsController, analyzerController: AnalyzerController): ApplicationService =
+    new ApplicationService(assetsController, analyzerController)
+
+}

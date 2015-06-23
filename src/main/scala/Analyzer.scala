@@ -14,7 +14,7 @@ import util.IOUtils._
 
 
 // TODO: Handle failure cases (set status = Job.Failed)
-final class Analyzer private (val config: Config) extends LazyLogging {
+final class Analyzer (val config: Config) extends LazyLogging {
 
   @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Var"))
   @volatile private var running: Boolean = false

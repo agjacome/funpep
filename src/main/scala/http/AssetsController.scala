@@ -29,7 +29,7 @@ private[http] object Asset {
   type Hash = String
 }
 
-final class AssetsController(val config: Config) extends LazyLogging {
+final class AssetsController (val config: Config) extends LazyLogging {
 
   import Asset._
   import AssetsController._
@@ -70,9 +70,17 @@ final class AssetsController(val config: Config) extends LazyLogging {
 
 object AssetsController {
 
-  val hashExtension = ".md5"
-  val gzipExtension = ".gz"
+  import Config.syntax._
 
-  val assetsPath = "/assets"
+  private[http] lazy val hashExtension = ".md5"
+  private[http] lazy val gzipExtension = ".gz"
+
+  private[http] lazy val assetsPath = "/assets"
+
+  def apply(config: Config): AssetsController =
+    new AssetsController(config)
+
+  def apply: Configured[AssetsController] =
+    Configured { new AssetsController(_) }
 
 }

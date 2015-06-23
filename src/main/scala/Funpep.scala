@@ -31,10 +31,10 @@ object Funpep extends LazyLogging {
     analyzer
   }
 
-  private def startServer(config: Config, httpService: HttpService): Server = {
+  private def startServer(config: Config, app: ApplicationService): Server = {
     logger.info(s"Starting server at http://${config.httpHost}:${config.httpPort}${config.httpPath}")
     BlazeBuilder
-      .mountService(httpService.service, config.httpPath)
+      .mountService(app.service, config.httpPath)
       .bindHttp(config.httpPort, config.httpHost)
       .withNio2(true)
       .run
@@ -49,9 +49,7 @@ object Funpep extends LazyLogging {
     ).unsafePerformIO()
 
     val analyzer = startAnalyzer(config)
-    val server   = startServer(config, new HttpService(
-      new AssetsController(config), new AnalyzerController(analyzer)
-    ))
+    val server   = startServer(config, ApplicationService(AssetsController(config), AnalyzerController(analyzer)))
 
     (readLn *> putStrLn("Stopping funpep...")).unsafePerformIO()
 
