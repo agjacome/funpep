@@ -29,4 +29,7 @@ object JsonUtils {
   implicit val UUIDEncodeJson: EncodeJson[UUID] =
     StringEncodeJson.contramap(_.toString)
 
+  def jsonErr(message: String): Json = Json("err":= message)
+  def jsonErr(err: Throwable):  Json = jsonErr(err.getMessage)
+
 }
