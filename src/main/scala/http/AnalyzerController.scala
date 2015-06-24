@@ -6,10 +6,3 @@ final class AnalyzerController (val analyzer: Analyzer) {
   // TODO: implement
 
 }
-
-object AnalyzerController {
-
-  def apply(analyzer: Analyzer): AnalyzerController =
-    new AnalyzerController(analyzer)
-
-}

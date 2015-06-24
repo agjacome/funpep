@@ -2,6 +2,7 @@ package es.uvigo.ei.sing.funpep
 package util
 
 import java.io._
+import java.net.URL
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file._
 import java.util.UUID
@@ -32,13 +33,23 @@ object IOUtils extends LazyLogging {
     IO(Process(command)).map (_.!!).catchLeft
   }
 
+  def resource(name: String): Option[URL] =
+    Option(getClass.getResource(name))
+
+  def resourceStream(name: String): Option[InputStream] =
+    Option(getClass.getResourceAsStream(name))
+
+  def resourceReader(name: String): Option[BufferedReader] =
+    resourceStream(name) map {
+      in ⇒ new BufferedReader(new InputStreamReader(in, UTF_8))
+    }
+
+  def property(name: String): Option[String] =
+    Option(System.getProperty(name))
+
 
   implicit class CloseableOps(val closeable: Closeable) extends AnyVal {
     def closeIO: IO[Unit] = closeable.close.point[IO]
-  }
-
-  implicit class InputStreamOps(val input: InputStream) extends AnyVal {
-    def toReader: BufferedReader = new BufferedReader(new InputStreamReader(input, UTF_8))
   }
 
   implicit class BufferedReaderOps(val reader: BufferedReader) extends AnyVal {
@@ -101,10 +112,8 @@ object IOUtils extends LazyLogging {
         }
       })) map(_ ⇒ ()) catchLeft
 
-    def openIOIStream: IO[InputStream]    = IO(Files.newInputStream(path))
-    def openIOOStream: IO[OutputStream]   = IO(Files.newOutputStream(path))
-    def openIOReader:  IO[BufferedReader] = IO(Files.newBufferedReader(path, UTF_8))
-    def openIOWriter:  IO[BufferedWriter] = IO(Files.newBufferedWriter(path, UTF_8))
+    def openIOReader: IO[BufferedReader] = IO(Files.newBufferedReader(path, UTF_8))
+    def openIOWriter: IO[BufferedWriter] = IO(Files.newBufferedWriter(path, UTF_8))
 
     def enumerateLines[A](action: IterateeT[IoExceptionOr[String], IO, A]): IO[A] =
       openIOReader.bracket(_.closeIO) { reader ⇒ (action &= reader.enumerateLines).run }

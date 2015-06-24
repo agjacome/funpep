@@ -43,10 +43,3 @@ final class ApplicationService (
   }
 
 }
-
-object ApplicationService {
-
-  def apply(assetsController: AssetsController, analyzerController: AnalyzerController): ApplicationService =
-    new ApplicationService(assetsController, analyzerController)
-
-}

@@ -1,7 +1,7 @@
 package es.uvigo.ei.sing.funpep
 package http
 
-import java.io.InputStream
+import java.io.BufferedReader
 import java.net.URL
 
 import scala.collection.concurrent.TrieMap
@@ -11,8 +11,7 @@ import scalaz.effect.IO
 
 import org.http4s.{ Request, Response, StaticFile }
 import org.http4s.dsl.{ Path ⇒ HttpPath }
-
-import com.typesafe.scalalogging.LazyLogging
+import org.http4s.headers.ETag
 
 import data.Config
 import es.uvigo.ei.sing.funpep.util.IOUtils._
@@ -29,58 +28,41 @@ private[http] object Asset {
   type Hash = String
 }
 
-final class AssetsController (val config: Config) extends LazyLogging {
+final class AssetsController {
 
   import Asset._
   import AssetsController._
 
-  private val cache = TrieMap.empty[Name, Option[Asset]]
+  private val cache = TrieMap.empty[Name, Asset]
 
-  // FIXME: STUB. Add ETag based on Asset hash, check If-None-Match, etc...
+  // FIXME: STUB. Check If-None-Match, etc...
   def serve(request: Request, assetName: HttpPath): Option[Response] =
-    for {
-      asset    ← asset(assetName.toString)
-      response ← StaticFile.fromURL(asset.url, Some(request))
-    } yield response
-
-  def asset(name: Name): Option[Asset] =
-    cache.getOrElseUpdate(name, assetURL(name) map {
-      Asset(name, _, config.httpDigest ? assetHash(name) | none[Hash])
-    })
-
-  // file "hash-name" is the same as "name" (see sbt-digest doc), we have
-  // already got the hash if present to be used in the ETag header, so content
-  // can be retrieved directly from the non-prepended-hash file
-  private def assetURL(path: String): Option[URL] =
-    resource(assetsPath + path + (config.httpGzip ? gzipExtension | ""))
-
-  private def assetHash(path: String): Option[Hash] = {
-    resourceStream(assetsPath + path + hashExtension) map readFirstLine >>= {
-      _.run.unsafePerformIO valueOr { err ⇒
-        logger.error(s"Error reading asset $path$hashExtension. No ETag will be issued with this asset.", err)
-        none[Hash]
+    asset(assetName.toString) >>= {
+      asset ⇒ StaticFile.fromURL(asset.url, Some(request)) map {
+        response ⇒ asset.hash.fold(response)(h ⇒ response.putHeaders(ETag(h)))
       }
     }
-  }
 
-  private val readFirstLine: InputStream ⇒ IOThrowable[Option[String]] =
-    _.toReader.point[IO].bracket(_.closeIO)(_.readLineIO).catchLeft
+  def asset(name: Name): Option[Asset] =
+    cache.get(name).fold({
+      val asset = assetURL(name).map(Asset(name, _, assetHash(name)))
+      asset.foreach(a ⇒ cache.update(name, a))
+      asset
+    })(a ⇒ a.some)
+
+  private def assetURL(path: String): Option[URL] =
+    resource(assetsRoute + path)
+
+  private def assetHash(path: String): Option[Hash] =
+    resourceReader(assetsRoute + path + ".md5") map readFirstLine >>= {
+      _.toOption.run.unsafePerformIO.flatten
+    }
+
+  private val readFirstLine: BufferedReader ⇒ IOThrowable[Option[String]] =
+    _.point[IO].bracket(_.closeIO)(_.readLineIO).catchLeft
 
 }
 
 object AssetsController {
-
-  import Config.syntax._
-
-  private[http] lazy val hashExtension = ".md5"
-  private[http] lazy val gzipExtension = ".gz"
-
-  private[http] lazy val assetsPath = "/assets"
-
-  def apply(config: Config): AssetsController =
-    new AssetsController(config)
-
-  def apply: Configured[AssetsController] =
-    Configured { new AssetsController(_) }
-
+  lazy val assetsRoute = "/assets"
 }

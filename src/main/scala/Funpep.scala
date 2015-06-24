@@ -12,6 +12,7 @@ import com.typesafe.scalalogging.LazyLogging
 
 import data.Config
 import http._
+import util.IOUtils.property
 
 
 // TODO: ugly code, clean up
@@ -49,7 +50,9 @@ object Funpep extends LazyLogging {
     ).unsafePerformIO()
 
     val analyzer = startAnalyzer(config)
-    val server   = startServer(config, ApplicationService(AssetsController(config), AnalyzerController(analyzer)))
+    val server   = startServer(config, new ApplicationService(
+      new AssetsController, new AnalyzerController(analyzer)
+    ))
 
     (readLn *> putStrLn("Stopping funpep...")).unsafePerformIO()
 

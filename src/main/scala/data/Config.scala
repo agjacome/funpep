@@ -18,8 +18,6 @@ final case class Config (
   httpHost:   String,
   httpPort:   Int,
   httpPath:   String,
-  httpDigest: Boolean,
-  httpGzip:   Boolean,
   clustalo:   String,
   database:   Path,
   temporal:   Path,
@@ -29,12 +27,10 @@ final case class Config (
 object Config {
 
   implicit val ConfigDecodeJson: DecodeJson[Config] =
-    jdecode9L(Config.apply)(
+    jdecode7L(Config.apply)(
       "http_host",
       "http_port",
       "http_path",
-      "http_digest",
-      "http_gzip",
       "clustalo",
       "database",
       "temporal",
@@ -50,8 +46,6 @@ object Config {
       httpHost   = "localhost",
       httpPort   = 8080,
       httpPath   = "/funpep",
-      httpDigest = true,
-      httpGzip   = true,
       clustalo   = "clustalo",
       database   = "database".toPath.toAbsolutePath,
       temporal   = "database/temporal".toPath.toAbsolutePath,

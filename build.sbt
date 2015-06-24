@@ -61,7 +61,7 @@ shellPrompt := { _ ⇒ "funpep » " }
 // sbt-web:
 enablePlugins(SbtWeb)
 
-pipelineStages := Seq(digest, gzip, rjs)
+pipelineStages := Seq(digest)
 
 WebKeys.packagePrefix in Assets := "assets/"
 (managedClasspath in Runtime) += (packageBin in Assets).value
