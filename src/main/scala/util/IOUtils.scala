@@ -21,6 +21,8 @@ import scalaz.iteratee.Iteratee._
 
 object IOUtils extends LazyLogging {
 
+  import scalaz.\/.{ fromTryCatchThrowable ⇒ tryCatch }
+
   type IOEitherT[A, B] = EitherT[IO, A, B]
   type IOThrowable[A]  = IOEitherT[Throwable, A]
 
@@ -88,6 +90,9 @@ object IOUtils extends LazyLogging {
     def /(p: Path  ): Path = path.resolve(p)
     def /(p: String): Path = path.resolve(p)
     def +(s: String): Path = Paths.get(path.toString + s)
+
+    def exists: IOThrowable[Boolean] =
+      IO(Files.exists(path)).catchLeft
 
     def create: IOThrowable[Unit] =
       IO(Files.createFile(path)) map (_ ⇒ ()) catchLeft

@@ -1,5 +1,6 @@
 package es.uvigo.ei.sing.funpep
 
+import java.io.IOException
 import java.nio.file.Path
 import java.util.UUID
 
@@ -13,7 +14,8 @@ import contrib.Clustal
 import util.IOUtils._
 
 
-// TODO: Handle failure cases (set status = Job.Failed)
+// TODO: Handle failure cases (set status = Job.Failed). Check existence of
+// files before trying to read/write them.
 final class Analyzer (val config: Config) extends LazyLogging {
 
   @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Var"))
@@ -50,7 +52,11 @@ final class Analyzer (val config: Config) extends LazyLogging {
   def alignment(id: UUID): Path = database(id) / "alignment.fasta"
   def guidetree(id: UUID): Path = database(id) / "tree.newick"
 
-  def status(id: UUID): IOThrowable[Job.Status] = Job(analysis(id)).map(_.status)
+  def status(id: UUID): IOThrowable[Job.Status] =
+    analysis(id).exists >>= { ∃ ⇒
+      if (∃) Job(analysis(id)).map(_.status)
+      else   IO(new IOException(s"Job with id '$id' does not exist").left[Job.Status])
+    }
 
   private def database(id: UUID): Path = config.database / id.toString
   private def temporal(id: UUID): Path = config.temporal / id.toString
