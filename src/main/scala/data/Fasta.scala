@@ -10,6 +10,9 @@ import scalaz._
 import scalaz.Scalaz._
 import scalaz.effect._
 
+import argonaut._
+import argonaut.Argonaut._
+
 import util.IOUtils._
 
 
@@ -73,6 +76,12 @@ object Fasta {
     override def append(f1: Fasta, f2: ⇒ Fasta): Fasta =
       Fasta(f1.entries.append(f2.entries))
   }
+
+  implicit val FastaDecodeJson: DecodeJson[Fasta] =
+    optionDecoder(_.string >>= { str ⇒ Fasta.apply(str).toOption }, "Email")
+
+  implicit val FastaEncodeJson: EncodeJson[Fasta] =
+    StringEncodeJson.contramap(_.shows)
 
 }
 

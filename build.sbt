@@ -1,28 +1,34 @@
 name         := "funpep"
 organization := "es.uvigo.ei.sing"
-scalaVersion := "2.11.6"
+scalaVersion := "2.11.7"
 version      := "0.0.1-SNAPSHOT"
 
 resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
 
 libraryDependencies ++= Seq(
+  // core
   "org.scalaz"  %% "scalaz-core"       % "7.1.2",
   "org.scalaz"  %% "scalaz-effect"     % "7.1.2",
   "org.scalaz"  %% "scalaz-iteratee"   % "7.1.2",
   "org.scalaz"  %% "scalaz-concurrent" % "7.1.2",
 
+  // http api
   "org.http4s"  %% "http4s-dsl"         % "0.8.2",
-  "org.http4s"  %% "http4s-blazeserver" % "0.8.2",
   "org.http4s"  %% "http4s-argonaut"    % "0.8.2",
+  "org.http4s"  %% "http4s-blazeserver" % "0.8.2",
 
+  // logging
   "com.typesafe.scala-logging" %% "scala-logging"   % "3.1.0" ,
   "ch.qos.logback"             %  "logback-classic" % "1.1.3" ,
 
-  "org.scalacheck" %% "scalacheck"  % "1.12.4" % "test",
-  "org.specs2"     %% "specs2-core" % "3.6.1"  % "test",
+  // web dependencies
+  "org.webjars" % "foundation" % "5.5.2" ,
 
-  "org.scalaz"     %% "scalaz-scalacheck-binding" % "7.1.2" % "test" exclude("org.scalacheck", "scalacheck_2.11"),
-  "org.specs2"     %% "specs2-scalacheck"         % "3.6.1" % "test" exclude("org.scalacheck", "scalacheck_2.11")
+  // testing
+  "org.scalacheck" %% "scalacheck"                % "1.12.4" % "test",
+  "org.specs2"     %% "specs2-core"               % "3.6.1"  % "test",
+  "org.scalaz"     %% "scalaz-scalacheck-binding" % "7.1.2"  % "test" exclude("org.scalacheck", "scalacheck_2.11"),
+  "org.specs2"     %% "specs2-scalacheck"         % "3.6.1"  % "test" exclude("org.scalacheck", "scalacheck_2.11")
 )
 
 scalacOptions ++= Seq(
@@ -58,9 +64,7 @@ initialCommands in console := """
 
 shellPrompt := { _ ⇒ "funpep » " }
 
-// sbt-web:
 enablePlugins(SbtWeb)
-
 pipelineStages := Seq(digest)
 
 WebKeys.packagePrefix in Assets := "assets/"

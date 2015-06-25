@@ -123,7 +123,7 @@ final class Analyzer (val config: Config) extends LazyLogging {
     }
 
     def dequeue: Option[UUID] = {
-      val id = Option(queue.poll(5L, TimeUnit.SECONDS))
+      val id = Option(queue.poll(3L, TimeUnit.SECONDS))
       id.foreach(_ ⇒ updateQueueFile())
       id
     }

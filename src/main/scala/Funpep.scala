@@ -35,7 +35,7 @@ object Funpep extends LazyLogging {
   private def startServer(config: Config, app: ApplicationService): Server = {
     logger.info(s"Starting server at http://${config.httpHost}:${config.httpPort}${config.httpPath}")
     BlazeBuilder
-      .mountService(app.service, config.httpPath)
+      .mountService(app.router, config.httpPath)
       .bindHttp(config.httpPort, config.httpHost)
       .withNio2(true)
       .run

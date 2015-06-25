@@ -7,10 +7,11 @@ import java.net.URL
 import scala.collection.concurrent.TrieMap
 
 import scalaz.Scalaz._
+import scalaz.concurrent.Task
 import scalaz.effect.IO
 
-import org.http4s.{ Request, Response, StaticFile }
-import org.http4s.dsl.{ Path ⇒ HttpPath }
+import org.http4s._
+import org.http4s.dsl._
 import org.http4s.headers.ETag
 
 import data.Config
@@ -35,15 +36,18 @@ final class AssetsController {
 
   private val cache = TrieMap.empty[Name, Asset]
 
+  def serve(request: Request, name: Asset.Name): Task[Response] =
+    respond(request, name).fold(NotFound())(Task.now)
+
   // FIXME: STUB. Check If-None-Match, etc...
-  def serve(request: Request, assetName: HttpPath): Option[Response] =
-    asset(assetName.toString) >>= {
+  private def respond(request: Request, name: Asset.Name): Option[Response] =
+    asset(name) flatMap {
       asset ⇒ StaticFile.fromURL(asset.url, Some(request)) map {
-        response ⇒ asset.hash.fold(response)(h ⇒ response.putHeaders(ETag(h)))
+        response ⇒ asset.hash.fold(response)(h ⇒ response.withHeaders(ETag(h)))
       }
     }
 
-  def asset(name: Name): Option[Asset] =
+  private def asset(name: Name): Option[Asset] =
     cache.get(name).fold({
       val asset = assetURL(name).map(Asset(name, _, assetHash(name)))
       asset.foreach(a ⇒ cache.update(name, a))
@@ -51,10 +55,11 @@ final class AssetsController {
     })(a ⇒ a.some)
 
   private def assetURL(path: String): Option[URL] =
-    resource(assetsRoute + path)
+    resource(assetsRoute + path).filter(!_.getFile.endsWith("/"))
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.NoNeedForMonad"))
   private def assetHash(path: String): Option[Hash] =
-    resourceReader(assetsRoute + path + ".md5") map readFirstLine >>= {
+    resourceReader(assetsRoute + path + ".md5") map readFirstLine flatMap {
       _.toOption.run.unsafePerformIO.flatten
     }
 

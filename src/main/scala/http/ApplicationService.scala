@@ -1,6 +1,7 @@
 package es.uvigo.ei.sing.funpep
 package http
 
+import java.lang.{ IllegalArgumentException ⇒ IllegalArg }
 import java.util.UUID
 
 import scalaz.concurrent.Task
@@ -17,8 +18,8 @@ import es.uvigo.ei.sing.funpep.util.JsonUtils._
 
 
 final class ApplicationService (
-  val assetsController:   AssetsController,
-  val analyzerController: AnalyzerController
+  val assetsCtrl:   AssetsController,
+  val analyzerCtrl: AnalyzerController
 ) extends LazyLogging {
 
   // Right-associative path extractor, already in http4s but not published
@@ -29,31 +30,49 @@ final class ApplicationService (
       list.headOption map { (_, Path(list.drop(1))) }
   }
 
-  private def logRequest(req: Request): Request = {
-    logger.info(s"${req.remoteAddr.getOrElse("noaddr")} ⇒ ${req.method}: ${req.uri.path} ${req.uri.query}")
-    req
+  val logRequest: PartialFunction[Request, Request] = PartialFunction {
+    request ⇒
+      logger.info(s"${request.remoteAddr.getOrElse("noaddr")} ⇒ ${request.method}: ${request.uri.path} ${request.uri.query}")
+      request
   }
 
-  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Throw"))
-  def service: HttpService =
-    HttpService(PartialFunction(logRequest _) andThen {
+  val asBadRequest:  Throwable ⇒ Task[Response] = err ⇒ BadRequest(jsonErr(err))
+  val asInternalErr: Throwable ⇒ Task[Response] = err ⇒ InternalServerError(jsonErr(err))
 
-      // funpep analyzer API
+  def router: HttpService =
+    HttpService(logRequest andThen {
+
       case GET -> Root / "api" / "queue_size" ⇒
-        analyzerController.queueSize
+        analyzerCtrl.queueSize
 
       case GET -> Root / "api" / "status" / uuid ⇒
-        tryCatch[UUID, IllegalArgumentException](UUID.fromString(uuid)) map {
-          analyzerController.status(_).unsafePerformIO
-        } valueOr { err ⇒ BadRequest(jsonErr(err)) }
+        tryCatch[UUID, IllegalArg](UUID.fromString(uuid)) map (analyzerCtrl.status) valueOr asBadRequest
 
-      case POST -> Root / "api" / "analyze" ⇒
-        // TODO: Implement
-        ???
+      case request @ POST -> Root / "api" / "analyze" ⇒
+        analyzerCtrl.analyze(request)
 
-      // assets directory
-      case req @ GET -> "assets" /: path ⇒
-        assetsController.serve(req, path).fold(NotFound())(Task.now)
+      case request @ GET -> Root                 ⇒ assetsCtrl.serve(request, "/html/index.html")
+      case request @ GET -> Root / "analyze"     ⇒ assetsCtrl.serve(request, "/html/analyze.html")
+      case request @ GET -> Root / "check"       ⇒ assetsCtrl.serve(request, "/html/check.html")
+      case request @ GET -> Root / "help"        ⇒ assetsCtrl.serve(request, "/html/help.html")
+      case request @ GET -> Root / "about"       ⇒ assetsCtrl.serve(request, "/html/about.html")
+      case request @ GET -> Root / "robots.txt"  ⇒ assetsCtrl.serve(request, "/html/robots.txt")
+      case request @ GET -> Root / "humans.txt"  ⇒ assetsCtrl.serve(request, "/html/humans.txt")
+      case request @ GET -> Root / "favicon.ico" ⇒ assetsCtrl.serve(request, "/img/favicon.ico")
+
+      case request @ GET -> "assets" /: "lib" /: path ⇒
+        assetsCtrl.serve(request, "/lib" + path.toString)
+
+      case request @ GET -> "assets" /: "css" /: path ⇒
+        assetsCtrl.serve(request, "/css" + path.toString)
+
+      case request @ GET -> "assets" /: "js" /: path ⇒
+        assetsCtrl.serve(request, "/js" + path.toString)
+
+      case request @ GET -> "assets" /: "img" /: path ⇒
+        assetsCtrl.serve(request, "/img" + path.toString)
+
+      case _ ⇒ NotFound()
 
     })
 
