@@ -1,0 +1,85 @@
+@import url(http://fonts.googleapis.com/css?family=Lobster|PT+Serif);
+
+@body-bg:   #ecf0f1;
+@main-bg:   #ffffff;
+@main-fg:   #222222;
+@primary:   #c0392b;
+@secondary: #333333;
+
+.body-font    { font-family: 'PT Serif';                 }
+.title-font   { font-family: 'Lobster';                  }
+.primary-fg   { color: @primary !important;              }
+.primary-bg   { background-color: @primary !important;   }
+.secondary-bg { background-color: @secondary !important; }
+
+.box-shadow(@x: 0; @y: 0; @blur: 1px; @spread: 0; @color: rgba(0, 0, 0, 0.75)) {
+  -webkit-box-shadow: @arguments;
+  -moz-box-shadow: @arguments;
+  box-shadow: @arguments;
+}
+
+body {
+    .body-font;
+    background-color: @body-bg;
+}
+
+main {
+    padding: 15px 0;
+    background: @main-bg;
+    .box-shadow(0px; 3px; 9px);
+
+    p a, p a:hover {
+        color: @main-fg;
+        text-decoration: underline;
+    }
+}
+
+h1, h2, h3 { .title-font; }
+
+h1 {
+    font-size:    18pt;
+    background:   center left url("../img/icon_white.png") no-repeat;
+    margin-left:  5px;
+    padding-left: 20px;
+}
+
+h2 {
+    .primary-fg;
+    font-size:    38pt;
+    background:   center left url("../img/icon_red.png") no-repeat;
+    padding-left: 65px;
+}
+
+h3 { font-size: 26pt; }
+
+.top-bar .toggle-topbar .menu-icon a {
+    .body-font;
+}
+
+.top-bar {
+    margin-bottom: 40px;
+    .box-shadow(0px; 1px; 9px; 3px);
+}
+
+.top-bar, .top-bar-section li:not(.has-form) a:not(.button) {
+    .primary-bg;
+}
+
+.button, .button:active, .button:visited {
+    .primary-bg;
+    border-color: @primary;
+
+    &:hover { .secondary-bg; }
+}
+
+.back-next {
+    margin-top: 20px;
+}
+
+.range-slider-handle &:hover {
+    .primary-bg;
+}
+
+.range-slider-active-segment {
+    background-color: #777777 !important;
+}
