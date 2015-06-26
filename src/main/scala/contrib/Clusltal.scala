@@ -12,15 +12,16 @@ import util.IOUtils._
 object Clustal {
 
   val devNull = "/dev/null".toPath
+  val threads = Math.min(1, Runtime.getRuntime().availableProcessors() - 3)
 
   def distanceMatrix(input: Path, alignment: Path, distmat: Path): ConfiguredT[IOThrowable, String] =
     ConfiguredT {
-      config ⇒ execute(s"${config.clustalo} -i $input -o $alignment --distmat-out=$distmat --percent-id --full --force")
+      config ⇒ execute(s"${config.clustalo} -i $input -o $alignment --distmat-out=$distmat --percent-id --full --threads=$threads --force")
     }
 
   def guideTree(input: Path, alignment: Path, tree: Path): ConfiguredT[IOThrowable, String] =
     ConfiguredT {
-      config ⇒ execute(s"${config.clustalo} -i $input -o $alignment --guidetree-out=$tree --full --force")
+      config ⇒ execute(s"${config.clustalo} -i $input -o $alignment --guidetree-out=$tree --full --threads=$threads --force")
     }
 
   def withDistanceMatrixOf[A](input: Path)(f: Path ⇒ IOThrowable[A]): ConfiguredT[IOThrowable, A] = {
