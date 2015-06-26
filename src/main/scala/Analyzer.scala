@@ -26,7 +26,7 @@ final class Analyzer (val config: Config) extends LazyLogging {
       while (running) {
         AnalyzerQueue.dequeue foreach { id ⇒
           process(id).run.unsafePerformIO() valueOr { error ⇒
-            logger.error(s"Unexpected error while analzyzing job $id", error)
+            logger.error(s"Unexpected error while analyzing job $id", error)
             sys.exit(-1)
           }
         }
@@ -51,6 +51,7 @@ final class Analyzer (val config: Config) extends LazyLogging {
   def filtered (id: UUID): Path = database(id) / "filtered.fasta"
   def alignment(id: UUID): Path = database(id) / "alignment.fasta"
   def guidetree(id: UUID): Path = database(id) / "tree.newick"
+  def csvReport(id: UUID): Path = database(id) / "report.csv"
 
   def status(id: UUID): IOThrowable[Job.Status] =
     analysis(id).exists >>= { ∃ ⇒
@@ -61,14 +62,18 @@ final class Analyzer (val config: Config) extends LazyLogging {
   private def database(id: UUID): Path = config.database / id.toString
   private def temporal(id: UUID): Path = config.temporal / id.toString
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.NoNeedForMonad"))
   private def process(id: UUID): IOThrowable[Unit] = {
     logger.info(s"Processing job $id")
-    updateStatus(id, Job.Started) *>
-    split(id)                     *>
-    filter(id)                    *>
-    align(id)                     *>
-    temporal(id).deleteDir        *>
-    updateStatus(id, Job.Finished)
+    for {
+     _ ← updateStatus(id, Job.Started)
+     _ ← split(id)
+     _ ← filter(id)
+     _ ← align(id)
+     _ ← report(id)
+     _ ← temporal(id).deleteDir
+     _ ← updateStatus(id, Job.Finished)
+    } yield logger.info(s"Analysis of job $id finished")
   }
 
   private def updateStatus(id: UUID, status: Job.Status): IOThrowable[Unit] =
@@ -91,6 +96,12 @@ final class Analyzer (val config: Config) extends LazyLogging {
 
   private def align(id: UUID): IOThrowable[Unit] =
     Clustal.guideTree(filtered(id), alignment(id), guidetree(id))(config) map { _ ⇒ () }
+
+  private def report(id: UUID): IOThrowable[Unit] =
+    for {
+      csv   ← Reporter.generateReport(reference(id), filtered(id))(config)
+      write ← csvReport(id).openIOWriter.bracket(_.closeIO)(_.writeIO(csv)).catchLeft
+    } yield write
 
   private def create(job: Job, comparing: Fasta, reference: Fasta): IOThrowable[Unit] = {
     logger.info(s"Creating files for job ${job.id}")

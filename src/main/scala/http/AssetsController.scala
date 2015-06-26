@@ -57,10 +57,11 @@ final class AssetsController {
   private def assetURL(path: String): Option[URL] =
     resource(assetsRoute + path).filter(!_.getFile.endsWith("/"))
 
+  // TODO: do not unsafePerformIO, just return IO[Option[Hash]] to caller
   @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.NoNeedForMonad"))
   private def assetHash(path: String): Option[Hash] =
     resourceReader(assetsRoute + path + ".md5") map readFirstLine flatMap {
-      _.toOption.run.unsafePerformIO.flatten
+      _.toOption.run.unsafePerformIO().flatten
     }
 
   private val readFirstLine: BufferedReader ⇒ IOThrowable[Option[String]] =

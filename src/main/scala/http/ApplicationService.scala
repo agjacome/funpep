@@ -36,9 +36,6 @@ final class ApplicationService (
       request
   }
 
-  val asBadRequest:  Throwable ⇒ Task[Response] = err ⇒ BadRequest(jsonErr(err))
-  val asInternalErr: Throwable ⇒ Task[Response] = err ⇒ InternalServerError(jsonErr(err))
-
   def router: HttpService =
     HttpService(logRequest andThen {
 
@@ -46,10 +43,15 @@ final class ApplicationService (
         analyzerCtrl.queueSize
 
       case GET -> Root / "api" / "status" / uuid ⇒
-        tryCatch[UUID, IllegalArg](UUID.fromString(uuid)) map (analyzerCtrl.status) valueOr asBadRequest
+        tryCatch[UUID, IllegalArg](UUID.fromString(uuid)).fold(
+          err ⇒ BadRequest(jsonErr(err)),
+          id  ⇒ analyzerCtrl.status(id).unsafePerformIO()
+        )
 
       case request @ POST -> Root / "api" / "analyze" ⇒
-        analyzerCtrl.analyze(request)
+        request.decodeWith(jsonOf[JobSettings]) {
+          settings ⇒ analyzerCtrl.analyze(settings).unsafePerformIO()
+        }
 
       case request @ GET -> Root                 ⇒ assetsCtrl.serve(request, "/html/index.html")
       case request @ GET -> Root / "analyze"     ⇒ assetsCtrl.serve(request, "/html/analyze.html")

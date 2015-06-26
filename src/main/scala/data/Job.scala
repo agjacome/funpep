@@ -32,6 +32,7 @@ final case class Job (
 object Job {
 
   sealed trait Status
+  case object Initial  extends Status
   case object Created  extends Status
   case object Queued   extends Status
   case object Started  extends Status
@@ -42,6 +43,7 @@ object Job {
 
     def apply(str: String): Option[Status] =
       str.toLowerCase.trim match {
+        case "initial"  ⇒ Initial.some
         case "created"  ⇒ Created.some
         case "queued"   ⇒ Queued.some
         case "started"  ⇒ Started.some
@@ -86,7 +88,7 @@ object JobPrinter {
   import \/.{ fromTryCatchThrowable ⇒ tryCatch }
 
   def toJsonString(s: ⇒ Job): String =
-    implicitly[EncodeJson[Job]].encode(s).nospaces
+    implicitly[EncodeJson[Job]].encode(s).spaces2
 
   def toJsonFile(file: Path)(s: ⇒ Job): IOThrowable[Unit] =
     file.openIOWriter.bracket(_.closeIO) {
