@@ -17,7 +17,7 @@ import com.typesafe.scalalogging.LazyLogging
 import es.uvigo.ei.sing.funpep.util.JsonUtils._
 
 
-final class ApplicationService (
+final class Service (
   val assetsCtrl:   AssetsController,
   val analyzerCtrl: AnalyzerController
 ) extends LazyLogging {
