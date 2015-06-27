@@ -67,6 +67,8 @@ object Reporter {
   }
 
   private def distanceMatrixLines(fastaFile: Path): ConfiguredT[IOThrowable, List[String]] =
-    Clustal.withDistanceMatrixOf(fastaFile)(_.contentsAsList.map(_.drop(1)))
+    Clustal.withDistanceMatrixOf(fastaFile) {
+      distMat ⇒ (distMat.contentsAsList.map(_.drop(1)) <* distMat.delete)
+    }
 
 }
