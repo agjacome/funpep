@@ -105,7 +105,7 @@ object FastaParser extends RegexParsers {
 
   def fromDirectory(directory: Path): IOThrowable[List[(Fasta, Path)]] =
     directory.files("*.{fasta,fas,fna,faa,ffn,frna}") >>= {
-      files ⇒ (files map fromFile).sequenceU map { _.zip(files) }
+      files ⇒ files.traverse(fromFile).map(_.zip(files))
     }
 
   private def validate(res: ParseResult[Option[Fasta]]): Throwable ∨ Fasta =
@@ -115,10 +115,10 @@ object FastaParser extends RegexParsers {
 
 object FastaPrinter {
 
-  import scalaz.\/.{ fromTryCatchThrowable ⇒ tryCatch }
+  import scalaz.\/.{ fromTryCatchNonFatal ⇒ tryCatch }
 
   lazy val toWriter: BufferedWriter ⇒ Fasta ⇒ Throwable ∨ Unit =
-    writer ⇒ fasta ⇒ tryCatch[Unit, Throwable] { writer.write(fasta.toFastaString) }
+    writer ⇒ fasta ⇒ tryCatch { writer.write(fasta.toFastaString) }
 
   def toFile(file: Path)(fasta: ⇒ Fasta): IOThrowable[Unit] =
     file.openIOWriter.bracket(_.closeIO) { toWriter(_)(fasta).point[IO] }
@@ -127,6 +127,6 @@ object FastaPrinter {
     toFile(directory / uuid.toString + ".fasta")(fasta)
 
   def toDirectory(directory: Path)(fastas: ⇒ List[Fasta]): IOThrowable[Unit] =
-    fastas.map(f ⇒ toNewFile(directory)(f)).sequenceU.map(_ ⇒ ())
+    fastas traverse { f ⇒ toNewFile(directory)(f) } map { _ ⇒ () }
 
 }

@@ -13,7 +13,7 @@ import argonaut.Argonaut._
 
 object JsonUtils {
 
-  import \/.{ fromTryCatchThrowable ⇒ tryCatch }
+  import \/.{ fromTryCatchNonFatal ⇒ tryCatch }
 
   implicit val PathDecodeJson: DecodeJson[Path] =
     optionDecoder(_.string map (_.toPath.toAbsolutePath), "Path")
@@ -23,7 +23,7 @@ object JsonUtils {
 
   implicit val UUIDDecodeJson: DecodeJson[UUID] =
     optionDecoder(_.string >>= {
-      str ⇒ tryCatch[UUID, IllegalArgumentException](UUID.fromString(str)).toOption
+      str ⇒ tryCatch(UUID.fromString(str)).toOption
     }, "UUID")
 
   implicit val UUIDEncodeJson: EncodeJson[UUID] =

@@ -21,7 +21,7 @@ import scalaz.iteratee.Iteratee._
 
 object IOUtils extends LazyLogging {
 
-  import scalaz.\/.{ fromTryCatchThrowable ⇒ tryCatch }
+  import scalaz.\/.{ fromTryCatchNonFatal ⇒ tryCatch }
 
   type IOEitherT[A, B] = EitherT[IO, A, B]
   type IOThrowable[A]  = IOEitherT[Throwable, A]
@@ -30,10 +30,11 @@ object IOUtils extends LazyLogging {
     EitherT(e) leftMap asT
 
 
-  def execute(command: String): IOThrowable[String] = {
-    logger.info(s"Executing command: $command")
-    IO(Process(command)).map (_.!!).catchLeft
-  }
+  def execute(command: String): IOThrowable[String] =
+    IO(Process(command)) map { proc ⇒
+      logger.info(s"Executing command: $command")
+      proc.!!
+    } catchLeft
 
   def resource(name: String): Option[URL] =
     Option(getClass.getResource(name))

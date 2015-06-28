@@ -5,7 +5,7 @@ import java.lang.{ IllegalArgumentException ⇒ IllegalArg }
 import java.util.UUID
 
 import scalaz.concurrent.Task
-import scalaz.\/.{ fromTryCatchThrowable ⇒ tryCatch }
+import scalaz.\/.{ fromTryCatchNonFatal ⇒ tryCatch }
 
 import org.http4s._
 import org.http4s.argonaut._
@@ -43,7 +43,7 @@ final class Service (
         analyzerCtrl.queueSize
 
       case GET -> Root / "api" / "status" / uuid ⇒
-        tryCatch[UUID, IllegalArg](UUID.fromString(uuid)).fold(
+        tryCatch(UUID.fromString(uuid)).fold(
           err ⇒ BadRequest(jsonErr(err)),
           id  ⇒ analyzerCtrl.status(id).unsafePerformIO()
         )

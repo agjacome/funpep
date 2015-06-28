@@ -12,7 +12,7 @@ import util.IOUtils._
 object Clustal {
 
   val devNull = "/dev/null".toPath
-  val threads = Math.min(1, Runtime.getRuntime().availableProcessors() - 3)
+  val threads = Runtime.getRuntime().availableProcessors()
 
   def distanceMatrix(input: Path, alignment: Path, distmat: Path): ConfiguredT[IOThrowable, String] =
     ConfiguredT {

@@ -14,18 +14,19 @@ import contrib.Clustal
 import util.IOUtils._
 
 
+// TODO: find a way to parallelize, N files at a time
 object Filter {
 
-  def filterSimilarEntries(directory: Path, threshold: Double): ConfiguredT[IOThrowable, List[FastaEntry]] = {
-    lazy val files = FastaParser.fromDirectory(directory).liftM[ConfiguredT]
+  def filterSimilarEntries(directory: Path, threshold: Double): ConfiguredT[IOThrowable, List[FastaEntry]] =
+    FastaParser.fromDirectory(directory).liftM[ConfiguredT] >>= {
+      filterSimilarFastas(threshold)
+    }
 
-    // Type ascription required because Scala does not correctly infer it here
-    lazy val entries: ConfiguredT[IOThrowable, List[(FastaEntry, Boolean)]] = files >>= (_ map {
-      f ⇒ isEntrySimilarTo(f._2, f._1.entries.head, threshold).map((f._1.entries.head, _))
-    } sequenceU)
-
-    entries.map(_ collect { case (entry, true) ⇒ entry })
-  }
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Throw"))
+  def filterSimilarFastas(threshold: Double)(files: List[(Fasta, Path)]): ConfiguredT[IOThrowable, List[FastaEntry]] =
+    (files map { case (fasta, path) ⇒
+      isEntrySimilarTo(path, fasta.entries.head, threshold).map(_.option(fasta.entries.head))
+    }).sequenceU map { _.map(_.toList).flatten }
 
   def isEntrySimilarTo(fasta: Path, entry: FastaEntry, threshold: Double): ConfiguredT[IOThrowable, Boolean] =
     Clustal.withDistanceMatrixOf(fasta)(isEntrySimilarEnough(entry, threshold))

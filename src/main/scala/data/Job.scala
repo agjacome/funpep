@@ -85,14 +85,14 @@ object JobParser {
 
 object JobPrinter {
 
-  import \/.{ fromTryCatchThrowable ⇒ tryCatch }
+  import \/.{ fromTryCatchNonFatal ⇒ tryCatch }
 
   def toJsonString(s: ⇒ Job): String =
     implicitly[EncodeJson[Job]].encode(s).spaces2
 
   def toJsonFile(file: Path)(s: ⇒ Job): IOThrowable[Unit] =
     file.openIOWriter.bracket(_.closeIO) {
-      writer ⇒ tryCatch[Unit, Throwable](writer.write(toJsonString(s))).point[IO]
+      writer ⇒ tryCatch(writer.write(toJsonString(s))).point[IO]
     }
 
 }
