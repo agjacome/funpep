@@ -50,9 +50,15 @@ scalacOptions in (Compile, console) ~= { _ filterNot Set(
 wartremoverWarnings ++= Warts.all
 
 initialCommands in console := """
+  |import scala.concurrent.ExecutionContext.Implicits.global
+  |
   |import scalaz._
   |import scalaz.Scalaz._
+  |
   |import es.uvigo.ei.sing.funpep._
+  |import es.uvigo.ei.sing.funpep.data._
+  |
+  |val config = Funpep.config
 """.stripMargin
 
 shellPrompt := { _ ⇒ "funpep » " }
