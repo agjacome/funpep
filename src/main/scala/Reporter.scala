@@ -45,7 +45,7 @@ object Reporter {
       case (entry, index, dists) ⇒
         val similarities   = dists.updated(index, Double.MinValue).takeRight(refSize)
         val maxSimilarity  = similarities.max
-        val mostSimilarIdx = dists.indexOf(maxSimilarity)
+        val mostSimilarIdx = dists.indexOf(maxSimilarity, dists.size - refSize)
 
         (entry, mostSimilarIdx, maxSimilarity)
     })
@@ -53,7 +53,9 @@ object Reporter {
   def reportLine(simEntry: SimilarEntry, filtered: Fasta): Option[String] = {
     val (e1, e2, num) = simEntry
 
-    (filtered.find(_.id ≟ e1) |@| filtered.find(_.id ≟ e2)) {
+    // Need to use "startsWith" instead of "===" because Clustal drops
+    // everything from first space to end in each entry ID
+    (filtered.find(_.id startsWith e1) |@| filtered.find(_.id startsWith e2)) {
       (s1, s2) ⇒ s""""$e1","${s1.seq.original}","$e2","${s2.seq.original}","$num""""
     }
   }
