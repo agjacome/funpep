@@ -6,6 +6,7 @@ import scalaz.Scalaz._
 
 import contrib.Clustal
 import data._
+import data.Config._
 import util.IOUtils._
 
 
@@ -13,8 +14,6 @@ import util.IOUtils._
 // Buggy wartremover warnings on pattern matching
 @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Throw"))
 object Reporter {
-
-  import Config.syntax._
 
   type LineNumber   = Int
   type ParsedLine   = (FastaEntry.ID, LineNumber, List[Double])

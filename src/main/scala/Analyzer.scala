@@ -10,6 +10,7 @@ import scalaz.effect.IO
 import com.typesafe.scalalogging.LazyLogging
 
 import data._
+import data.Config._
 import contrib.Clustal
 import util.IOUtils._
 
@@ -60,7 +61,7 @@ final class Analyzer (val config: Config) extends LazyLogging {
     }
 
   private def database(id: UUID): Path = config.database / id.toString
-  private def temporal(id: UUID): Path = config.temporal / id.toString
+  private def temporal(id: UUID): Path = database(id) / "tmp"
 
   @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.NoNeedForMonad"))
   private def process(id: UUID): IOThrowable[Unit] = {
@@ -89,7 +90,7 @@ final class Analyzer (val config: Config) extends LazyLogging {
   private def filter(id: UUID): IOThrowable[Unit] =
     for {
       job ← Job(analysis(id))
-      sim ← Filter.filterSimilarEntries(temporal(id), job.threshold)(config)
+      sim ← Filter.parFilterSimilarEntries(temporal(id), job.threshold)(config)
       ref ← Fasta(reference(id))
       fin ← Fasta(sim <::: ref.entries).toFile(filtered(id))
     } yield fin
@@ -159,8 +160,6 @@ final class Analyzer (val config: Config) extends LazyLogging {
 }
 
 object Analyzer {
-
-  import Config.syntax._
 
   def apply(config: Config): Analyzer =
     new Analyzer(config)

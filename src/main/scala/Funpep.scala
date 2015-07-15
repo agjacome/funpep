@@ -18,22 +18,24 @@ import util.IOUtils.property
 // TODO: ugly code, clean up
 object Funpep extends LazyLogging {
 
-  lazy val config = property("config.file").fold(Config.default) {
-    path ⇒ Config(path.toPath).run.unsafePerformIO() valueOr { err ⇒
-      logger.error(s"Error parsing config file $path: ${err.getMessage}")
-      sys.exit(-1)
-    }
-  }
+  def config: Config = Config(
+    httpHost = "localhost",
+    httpPort = 8080,
+    httpPath = "/funpep",
+    clustalo = "clustalo",
+    database = "database".toPath.toAbsolutePath,
+    jobQueue = "job_queue".toPath.toAbsolutePath
+  )
 
   def startAnalyzer(config: Config): Analyzer = {
-    logger.info(s"Starting analyzer - db: ${config.database}, temp: ${config.temporal}, queue: ${config.jobQueue}")
+    logger.info(s"Starting analyzer - db: ${config.database}, queue: ${config.jobQueue}")
     val analyzer = Analyzer(config)
     analyzer.start()
     analyzer
   }
 
   def startServer(config: Config, service: Service): Server = {
-    logger.info(s"Starting server at http://${config.httpHost}:${config.httpPort}${config.httpPath}")
+    logger.info(s"Starting Funpep server at http://${config.httpHost}:${config.httpPort}${config.httpPath}")
     BlazeBuilder
       .mountService(service.router, config.httpPath)
       .bindHttp(config.httpPort, config.httpHost)

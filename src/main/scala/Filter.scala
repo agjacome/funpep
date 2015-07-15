@@ -3,13 +3,15 @@ package es.uvigo.ei.sing.funpep
 import java.io.IOException
 import java.nio.file.{ Path, Files }
 
+import scala.collection.parallel.ParSeq
+
 import scalaz.Scalaz._
 import scalaz.effect._
 import scalaz.iteratee._
 import scalaz.iteratee.Iteratee._
 
-import data.{ Fasta, FastaEntry, FastaParser }
-import data.Config.syntax._
+import data._
+import data.Config._
 import contrib.Clustal
 import util.IOUtils._
 
@@ -17,8 +19,21 @@ import util.IOUtils._
 // TODO: find a way to parallelize, N files at a time
 object Filter {
 
+  // FIXME: Deplorable
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Throw"))
+  def parFilterSimilarEntries(directory: Path, threshold: Double)(config: Config): IOThrowable[List[FastaEntry]] = {
+    val files = FastaParser.fromDirectory(directory).getOrElse(List.empty[(Fasta, Path)]).unsafePerformIO()
+
+    val entries = files.par map { case (fasta, path) ⇒
+      val io = isEntrySimilarTo(path, fasta.entries.head, threshold).map(_.option(fasta.entries.head))
+      io.apply(config).getOrElse(none[FastaEntry]).unsafePerformIO()
+    }
+
+    entries.toList.map(_.toList).flatten.right[Throwable].point[IO]
+  }
+
   def filterSimilarEntries(directory: Path, threshold: Double): ConfiguredT[IOThrowable, List[FastaEntry]] =
-    FastaParser.fromDirectory(directory).liftM[ConfiguredT] >>= {
+    FastaParser.fromDirectory(directory).liftM[ConfiguredT].map(_.toList) >>= {
       filterSimilarFastas(threshold)
     }
 

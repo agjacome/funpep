@@ -5,7 +5,7 @@ import java.nio.file.Path
 
 import scalaz.Scalaz._
 
-import data.Config.syntax._
+import data.Config._
 import util.IOUtils._
 
 
