@@ -4,7 +4,7 @@
 sbt
 
 project/*
-!project/FunPepBuild.scala
+!project/FunpepBuild.scala
 !project/build.properties
 !project/plugins.sbt
 
