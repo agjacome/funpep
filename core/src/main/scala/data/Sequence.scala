@@ -25,7 +25,7 @@ final case class Sequence[A](
   // val f: Int ⇒ Option[Int] = x ⇒ Option(x * 2)
   // List(1, 2, 3).headOption.flatMap(f)
   //
-  // For-comprehension alternative does not fail, but incurs in an unnecessary
+  // Alternative for-notation does not fail, but incurs in an unnecessary
   // map(identity). Another non-error alternative is to use scalaz bind
   // operators (>>=, ∗), but seems like a nasty hack to prevent a warning, I do
   // prefer @SuppressWarnings in this case.
