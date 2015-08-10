@@ -1,6 +1,10 @@
+*.bak
+*.log
+
 sbt
 
 project/*
+!project/FunPepBuild.scala
 !project/build.properties
 !project/plugins.sbt
 

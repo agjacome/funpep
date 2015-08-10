@@ -1,65 +1,105 @@
-name         := "funpep"
-organization := "es.uvigo.ei.sing"
-scalaVersion := "2.11.7"
-version      := "0.0.1-SNAPSHOT"
+version      in ThisBuild := "0.1.0-SNAPSHOT"
+apiVersion   in ThisBuild := getApiVersion(version.value)
+scalaVersion in ThisBuild := "2.11.7"
+javaVersion  in ThisBuild := "1.8"
 
-resolvers += "Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases"
+lazy val root = Project("funpep", file(".")).settings(common, metadata).settings(
+  description := "Functional enrichment of peptide data sets"
+).aggregate(core, server)
 
-libraryDependencies ++= Seq(
-  "org.scalaz"  %% "scalaz-core"       % "7.1.3",
-  "org.scalaz"  %% "scalaz-effect"     % "7.1.3",
-  "org.scalaz"  %% "scalaz-iteratee"   % "7.1.3",
-  "org.scalaz"  %% "scalaz-concurrent" % "7.1.3",
+lazy val core = module("core").settings(
+  description := "Core funpep library",
 
-  "org.http4s"  %% "http4s-dsl"         % "0.8.4",
-  "org.http4s"  %% "http4s-argonaut"    % "0.8.4",
-  "org.http4s"  %% "http4s-blazeserver" % "0.8.4",
+  resolvers ++= Seq(
+    "Scalaz Bintray Repo"   at "http://dl.bintray.com/scalaz/releases",
+    "tpolecat Bintray Repo" at "http://dl.bintray.com/tpolecat/maven"
+  ),
 
-  "com.typesafe.scala-logging" %% "scala-logging"   % "3.1.0" ,
-  "ch.qos.logback"             %  "logback-classic" % "1.1.3"
+  libraryDependencies ++= Seq(
+    "org.scalaz"  %% "scalaz-core"       % "7.1.3",
+    "org.scalaz"  %% "scalaz-effect"     % "7.1.3",
+    "org.scalaz"  %% "scalaz-iteratee"   % "7.1.3",
+    "org.scalaz"  %% "scalaz-concurrent" % "7.1.3",
 
-  // NO TESTS ATM
-  // "org.scalacheck" %% "scalacheck"                % "1.12.4" % "test",
-  // "org.specs2"     %% "specs2-core"               % "3.6.1"  % "test",
-  // "org.scalaz"     %% "scalaz-scalacheck-binding" % "7.1.2"  % "test" exclude("org.scalacheck", "scalacheck_2.11"),
-  // "org.specs2"     %% "specs2-scalacheck"         % "3.6.1"  % "test" exclude("org.scalacheck", "scalacheck_2.11")
+    "org.tpolecat" %% "atto-core"  % "0.4.1"
+  )
 )
 
-scalacOptions ++= Seq(
-  "-deprecation",
-  "-encoding", "UTF-8",
-  "-feature",
-  "-language:existentials",
-  "-language:higherKinds",
-  "-language:implicitConversions",
-  "-language:postfixOps",
-  "-unchecked",
-  "-Xfatal-warnings",
-  "-Xfuture",
-  "-Xlint",
-  "-Yno-adapted-args",
-  "-Ywarn-dead-code",
-  "-Ywarn-numeric-widen",
-  "-Ywarn-unused-import",
-  "-Ywarn-value-discard"
+lazy val server = module("server").settings(
+  description := "HTTP server providing a REST API to access funpep",
+
+  resolvers += "Oncue Bintray Repo" at "http://dl.bintray.com/oncue/releases",
+
+  libraryDependencies ++= Seq(
+    "io.argonaut" %% "argonaut" % "6.0.4" exclude("org.scalaz", "scalaz-core_2.11"),
+
+    "org.http4s"  %% "http4s-dsl"         % "0.8.4",
+    "org.http4s"  %% "http4s-argonaut"    % "0.8.4" exclude("io.argonaut", "argonaut_2.11"),
+    "org.http4s"  %% "http4s-blazeserver" % "0.8.4",
+
+    "oncue.journal" %% "core" % "2.2.1"
+  )
+).dependsOn(core % "compile;test->test")
+
+lazy val common = Seq(
+  libraryDependencies += "org.scala-lang.modules" %% "scala-java8-compat" % "0.5.0",
+
+  scalacOptions ++= Seq(
+    "-deprecation",
+    "-encoding", "UTF-8",
+    "-feature",
+    "-language:existentials",
+    "-language:higherKinds",
+    "-language:implicitConversions",
+    "-language:postfixOps",
+    "-unchecked",
+    "-Xfatal-warnings",
+    "-Xfuture",
+    "-Xlint",
+    "-Yno-adapted-args",
+    "-Ywarn-dead-code",
+    "-Ywarn-numeric-widen",
+    "-Ywarn-unused-import",
+    "-Ywarn-value-discard",
+    s"-target:jvm-${javaVersion.value}",
+
+    // scala 2.11.7 ↔ jvm 1.8 optimizations (requires scala-java8-compat)
+    "-Ybackend:GenBCode",
+    "-Ydelambdafy:method",
+    "-Yopt:l:classpath"
+  ),
+
+  javacOptions ++= Seq(
+    "-source", javaVersion.value,
+    "-target", javaVersion.value,
+    "-Xlint:deprecation",
+    "-Xlint:unchecked"
+  ),
+
+  scalacOptions in (Compile, console) ~= { _ filterNot Set(
+    "-Xfatal-warnings", "-Ywarn-unused-import"
+  )},
+
+  wartremoverWarnings ++= Warts.all,
+
+  shellPrompt := { _ ⇒ s"${name.value} » " }
 )
 
-scalacOptions in (Compile, console) ~= { _ filterNot Set(
-  "-Xfatal-warnings", "-Ywarn-unused-import"
-)}
+lazy val metadata = Seq(
+  organization := "es.uvigo.ei.sing",
+  developers := List(
+    Developer("agjacome", "Alberto G. Jácome"  , "agjacome@esei.uvigo.es", url("https://github.com/agjacome")),
+    Developer("aitorbm" , "Aitor Blanco Míguez", "aitorbm@esei.uvigo.es" , url("https://github.com/aitorbm" ))
+  ),
+  startYear := Some(2015),
+  homepage  := Some(url("http://sing.ei.uvigo.es/funpep")),
+  licenses  := Seq("MIT License" -> url("http://www.opensource.org/licenses/mit-license.html")),
+  scmInfo   := Some(ScmInfo(
+    url("https://github.com/agjacome/funpep"),
+    "scm:git:https://github.com/agjacome/funpep",
+    Some("scm:git:git@github.com/agjacome/funpep")
+  ))
+)
 
-wartremoverWarnings ++= Warts.all
-
-initialCommands in console := """
-  |import scala.concurrent.ExecutionContext.Implicits.global
-  |
-  |import scalaz._
-  |import scalaz.Scalaz._
-  |
-  |import es.uvigo.ei.sing.funpep._
-  |import es.uvigo.ei.sing.funpep.data._
-  |
-  |val config = Funpep.config
-""".stripMargin
-
-shellPrompt := { _ ⇒ "funpep » " }
+def module(name: String): Project =
+  Project(s"funpep-$name", file(name)).settings(common, metadata)
