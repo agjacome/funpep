@@ -1,4 +1,4 @@
-package es.uvigo.ei.sing.funpep
+package funpep
 package data
 
 import scalaz._
