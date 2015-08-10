@@ -21,7 +21,9 @@ lazy val core = module("core").settings(
     "org.scalaz"  %% "scalaz-iteratee"   % "7.1.3",
     "org.scalaz"  %% "scalaz-concurrent" % "7.1.3",
 
-    "org.tpolecat" %% "atto-core"  % "0.4.1"
+    "org.scalaz.stream" %% "scalaz-stream" % "0.7.2a",
+
+    "org.tpolecat" %% "atto-core" % "0.4.1"
   )
 )
 
@@ -42,7 +44,9 @@ lazy val server = module("server").settings(
 ).dependsOn(core % "compile;test->test")
 
 lazy val common = Seq(
-  libraryDependencies += "org.scala-lang.modules" %% "scala-java8-compat" % "0.5.0",
+
+  // for jvm 1.8 optimizations
+  // libraryDependencies += "org.scala-lang.modules" %% "scala-java8-compat" % "0.5.0",
 
   scalacOptions ++= Seq(
     "-deprecation",
@@ -61,12 +65,14 @@ lazy val common = Seq(
     "-Ywarn-numeric-widen",
     "-Ywarn-unused-import",
     "-Ywarn-value-discard",
-    s"-target:jvm-${javaVersion.value}",
+    s"-target:jvm-${javaVersion.value}"
 
     // scala 2.11.7 ↔ jvm 1.8 optimizations (requires scala-java8-compat)
-    "-Ybackend:GenBCode",
-    "-Ydelambdafy:method",
-    "-Yopt:l:classpath"
+    // disabled because it is causing some troubles at the moment, will reenable
+    // in a future and try to actually solve them
+    // "-Ybackend:GenBCode",
+    // "-Ydelambdafy:method",
+    // "-Yopt:l:classpath"
   ),
 
   javacOptions ++= Seq(
