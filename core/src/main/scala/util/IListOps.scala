@@ -1,8 +1,9 @@
 package funpep
 package util
 
-import scalaz._
+import scalaz.{ IList, Maybe }
 import scalaz.syntax.std.option._
+
 
 final class IListOps[A] private[util] (val self: IList[A]) extends AnyVal {
 

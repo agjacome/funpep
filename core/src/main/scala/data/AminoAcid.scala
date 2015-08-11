@@ -8,6 +8,7 @@ import scalaz.syntax.std.option._
 import atto._
 import atto.parser.character.optElem
 
+
 sealed abstract class AminoAcid (
   val code: Char,
   val name: Maybe[String],
@@ -54,11 +55,8 @@ object AminoAcid {
   implicit val AminoAcidEqual: Equal[AminoAcid] = Equal.equalA
   implicit val AminoAcidShow:  Show[AminoAcid]  = Show.shows(_.code.toString)
 
-  lazy val codes: Char ==>> AminoAcid =
-    all.map(aa ⇒ (aa.code → aa)).toMap
-
-  lazy val parser: Parser[AminoAcid] =
-    optElem(c ⇒ codes.lookup(c.toUpper))
+  lazy val codes:  Char ==>> AminoAcid = all.map(aa ⇒ (aa.code → aa)).toMap
+  lazy val parser: Parser[AminoAcid]   = optElem(c ⇒ codes.lookup(c.toUpper))
 
   def apply   (code: Char): Maybe[AminoAcid] = fromCode(code)
   def fromCode(code: Char): Maybe[AminoAcid] = codes.lookup(code.toUpper).toMaybe

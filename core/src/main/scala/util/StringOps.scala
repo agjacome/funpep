@@ -1,7 +1,8 @@
 package funpep
 package util
 
-import scalaz._
+import scalaz.IList
+
 
 final class StringOps private[util] (val self: String) extends AnyVal {
 

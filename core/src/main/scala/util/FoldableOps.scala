@@ -6,6 +6,7 @@ import java.util.StringJoiner
 import scalaz._
 import scalaz.syntax.show._
 
+
 final class FoldableOps[F[_], A] private[util] (val self: F[A])(implicit val F: Foldable[F]) {
 
   def mkString(start: String, sep: String, end: String)(implicit ev: Show[A]): String =

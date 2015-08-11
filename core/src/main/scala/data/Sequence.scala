@@ -8,6 +8,7 @@ import util.ops.string._
 import util.ops.ilist._
 import util.ops.foldable._
 
+
 final case class Sequence[A] (
   header:   Sequence.Header,
   residues: IList[A]
