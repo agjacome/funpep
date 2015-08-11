@@ -4,11 +4,11 @@ package data
 import scalaz._
 import scalaz.std.string._
 
-import funpep.util.ops.string._
-import funpep.util.ops.ilist._
-import funpep.util.ops.foldable._
+import util.ops.string._
+import util.ops.ilist._
+import util.ops.foldable._
 
-final case class Sequence[A](
+final case class Sequence[A] (
   header:   Sequence.Header,
   residues: IList[A]
 ) {

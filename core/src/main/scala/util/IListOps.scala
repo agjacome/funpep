@@ -9,7 +9,7 @@ final class IListOps[A] private[util] (val self: IList[A]) extends AnyVal {
   def tailMaybe: Maybe[IList[A]] = self.tailOption.toMaybe
 
   def grouped(n: Int): IList[IList[A]] = {
-    def groups = Math.ceil(self.length / n.toDouble).toInt
+    def groups = math.ceil(self.length / n.toDouble).toInt
     Stream.from(0, n).take(groups).foldLeft(IList.empty[IList[A]]) {
       (chunks, index) ⇒ self.slice(index, index + n) :: chunks
     }
