@@ -6,14 +6,13 @@ import scalaz.std.anyVal._
 import scalaz.syntax.std.option._
 
 import atto._
-import atto.parser.character.optElem
 
 
 sealed abstract class AminoAcid (
   val code: Char,
   val name: Maybe[String],
   val mass: Maybe[Double]
-) extends Compound[Char]
+) extends Compound
 
 object AminoAcid {
 
@@ -52,11 +51,23 @@ object AminoAcid {
   case object ∘∘∘ extends AminoAcid('.', empty, empty)
   case object Stp extends AminoAcid('*', empty, empty)
 
-  implicit val AminoAcidEqual: Equal[AminoAcid] = Equal.equalA
-  implicit val AminoAcidShow:  Show[AminoAcid]  = Show.shows(_.code.toString)
+  implicit val AminoAcidEqual:  Equal[AminoAcid]  = Equal.equalA
+  implicit val AminoAcidShow:   Show[AminoAcid]   = Show.shows(_.code.toString)
 
-  lazy val codes:  Char ==>> AminoAcid = all.map(aa ⇒ (aa.code → aa)).toMap
-  lazy val parser: Parser[AminoAcid]   = optElem(c ⇒ codes.lookup(c.toUpper))
+  // cannot use optElem directly, see: https://github.com/tpolecat/atto/pull/20
+  implicit def AminoAcidParser: Parser[AminoAcid] = {
+    import atto.parser.combinator._
+    import atto.syntax.parser._
+
+    ensure(1) flatMap { s ⇒
+      codes.lookup(s.head.toUpper).cata(
+        a ⇒ advance(1) ~> ok(a),
+        err(s"Invalid aminoacid '${s.head}'")
+      )
+    }
+  }
+
+  lazy val codes: Char ==>> AminoAcid = all.map(aa ⇒ (aa.code → aa)).toMap
 
   def apply   (code: Char): Maybe[AminoAcid] = fromCode(code)
   def fromCode(code: Char): Maybe[AminoAcid] = codes.lookup(code.toUpper).toMaybe

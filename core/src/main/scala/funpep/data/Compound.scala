@@ -4,8 +4,8 @@ package data
 import scalaz.Maybe
 
 
-trait Compound[Code] {
-  def code: Code
+trait Compound {
+  def code: Char
   def name: Maybe[String]
   def mass: Maybe[Double]
 }

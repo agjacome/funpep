@@ -23,7 +23,8 @@ lazy val core = module("core").settings(
 
     "org.scalaz.stream" %% "scalaz-stream" % "0.7.2a",
 
-    "org.tpolecat" %% "atto-core" % "0.4.1"
+    "org.tpolecat" %% "atto-core"   % "0.4.1",
+    "org.tpolecat" %% "atto-stream" % "0.4.1" exclude ("org.scalaz.stream", "scalaz-stream")
   )
 )
 
@@ -86,7 +87,7 @@ lazy val common = Seq(
     "-Xfatal-warnings", "-Ywarn-unused-import"
   )},
 
-  wartremoverWarnings ++= Warts.all,
+  // wartremoverWarnings ++= Warts.all,
 
   shellPrompt := { _ ⇒ s"${name.value} » " }
 )

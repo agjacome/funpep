@@ -1,15 +1,11 @@
 package funpep
 
-import java.util.UUID
-
-
 package object util {
-
-  def randomUUID: UUID = UUID.randomUUID
 
   object ops {
     object foldable extends ToFoldableOps
     object ilist    extends ToIListOps
+    object path     extends ToPathOps
     object string   extends ToStringOps
   }
 

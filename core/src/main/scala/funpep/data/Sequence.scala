@@ -18,7 +18,7 @@ final case class Sequence[A] (
     header.words.headMaybe
 
   def comment: Maybe[String] =
-    header.words.tailMaybe.map(_ mkString " ")
+    header.words.tailMaybe.map(_.mkString(" ")(Show.shows(identity)))
 
   def toString(lineLength: Int)(implicit ev: Show[A]): String = {
     val dashes = Stream.continually('-')
@@ -41,7 +41,7 @@ object Sequence {
   type Header = String
 
   implicit def SequenceEqual[A: Equal]: Equal[Sequence[A]] =
-    implicitly[Equal[IList[A]]].contramap(_.residues)
+    Equal[IList[A]].contramap(_.residues)
 
   implicit def SequenceShow[A: Show]: Show[Sequence[A]] =
     Show.shows(_.toString(60))
