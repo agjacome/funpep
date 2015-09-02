@@ -11,5 +11,3 @@ private[util] trait Functions {
   def discard[A]: A ⇒ Unit = _ ⇒ {}
 
 }
-
-object functions extends Functions

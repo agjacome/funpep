@@ -25,5 +25,3 @@ private[util] trait Types {
   }
 
 }
-
-object types extends Types
