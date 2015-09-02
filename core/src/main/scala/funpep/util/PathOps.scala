@@ -1,7 +1,7 @@
 package funpep
 package util
 
-import java.nio.file.Path
+import java.nio.file.{ Path, Paths }
 import java.nio.channels.AsynchronousFileChannel
 
 final class PathOps private[util] (val self: Path) extends AnyVal {
@@ -16,6 +16,8 @@ final class PathOps private[util] (val self: Path) extends AnyVal {
 
   def |(sibling: Path):   Path = self.resolveSibling(sibling)
   def |(sibling: String): Path = self.resolveSibling(sibling)
+
+  def +(extension: String): Path = Paths.get(self.toString + extension)
 
 }
 
