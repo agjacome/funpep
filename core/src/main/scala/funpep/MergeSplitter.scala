@@ -13,7 +13,7 @@ import util.ops.path._
 import util.ops.foldable._
 
 
-object FastaMergeSplitter {
+object MergeSplitter {
 
   def mergeSplit[A](cmp: Fasta[A], ref: Fasta[A])(implicit ev: A ⇒ Compound): EphemeralStream[Fasta[A]] =
     cmp.entries.toEphemeralStream.map(entry ⇒ Fasta(entry <:: ref.entries))
