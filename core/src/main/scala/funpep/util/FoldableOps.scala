@@ -4,6 +4,8 @@ package util
 import java.util.StringJoiner
 
 import scalaz._
+import scalaz.concurrent._
+import scalaz.stream._
 import scalaz.syntax.show._
 
 
@@ -32,9 +34,19 @@ final class FoldableOps[F[_], A] private[util] (val self: F[A])(implicit val F: 
   def toISet(implicit ord: Order[A]): ISet[A] =
     ISet.fromFoldable(self)
 
+  def toProcess: Process[Task, A] =
+    F.foldRight(self, Process.empty[Task, A]) {
+      (a, proc) ⇒ proc merge Process.eval(Task(a))
+    }
+
+  def toProcessDelay: Process[Task, A] =
+    F.foldRight(self, Process.empty[Task, A]) {
+      (a, proc) ⇒ proc merge Process.eval(Task.delay(a))
+    }
+
 }
 
 trait ToFoldableOps {
-  implicit def ToFoldableOps[F[_]: Foldable, A](self: F[A]): FoldableOps[F, A] =
+  implicit def ToFunpepFoldableOps[F[_]: Foldable, A](self: F[A]): FoldableOps[F, A] =
     new FoldableOps[F,A](self)
 }

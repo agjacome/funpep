@@ -19,6 +19,6 @@ final class IListOps[A] private[util] (val self: IList[A]) extends AnyVal {
 }
 
 trait ToIListOps {
-  implicit def ToIListOps[A](self: IList[A]): IListOps[A] =
+  implicit def ToFunpepIListOps[A](self: IList[A]): IListOps[A] =
     new IListOps[A](self)
 }

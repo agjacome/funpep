@@ -17,5 +17,5 @@ final class StringOps private[util] (val self: String) extends AnyVal {
 }
 
 trait ToStringOps {
-  implicit def ToStringOps(self: String): StringOps = new StringOps(self)
+  implicit def ToFunpepStringOps(self: String): StringOps = new StringOps(self)
 }

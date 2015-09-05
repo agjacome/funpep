@@ -22,5 +22,5 @@ final class PathOps private[util] (val self: Path) extends AnyVal {
 }
 
 trait ToPathOps {
-  implicit def ToPathOps(self: Path): PathOps = new PathOps(self)
+  implicit def ToFunpepPathOps(self: Path): PathOps = new PathOps(self)
 }
