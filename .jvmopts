@@ -1,0 +1,7 @@
+-Xmx4G
+-Xms4G
+-Xss6M
+-server
+-XX:ReservedCodeCacheSize=256M
+-XX:+UseConcMarkSweepGC
+-XX:+CMSClassUnloadingEnabled
