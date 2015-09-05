@@ -17,7 +17,7 @@ import util.types._
 
 final case class Fasta[A] (
   val entries: NonEmptyList[Sequence[A]]
-)(implicit val ev: A ⇒ Compound) {
+)(implicit ev: A ⇒ Compound) {
 
   def toString(length: Int): String = {
     def format(seq: Sequence[A]): String =
@@ -44,7 +44,7 @@ object Fasta {
 
 }
 
-final class FastaParser[A] private[data] (val compound: Parser[A])(implicit val ev: A ⇒ Compound) {
+final class FastaParser[A] private[data] (val compound: Parser[A])(implicit ev: A ⇒ Compound) {
 
   import java.nio.channels.AsynchronousFileChannel
 
