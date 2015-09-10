@@ -25,7 +25,17 @@ lazy val core = module("core").settings(
 
     "org.tpolecat" %% "atto-core"   % "0.4.1",
     "org.tpolecat" %% "atto-stream" % "0.4.1" exclude ("org.scalaz.stream", "scalaz-stream")
-  )
+  ),
+
+  initialCommands :=
+    """import scalaz._
+       import Scalaz._
+       import scalaz.stream._
+       import scalaz.concurrent.Task
+       import funpep._
+       import funpep.data._
+       import funpep.contrib._
+       import funpep.util.all._"""
 )
 
 lazy val server = module("server").settings(
