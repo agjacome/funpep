@@ -16,22 +16,20 @@ import util.ops.path._
 
 object Clustal {
 
-  private def clustalΩ(params: String): KleisliProcess[Path, String] =
-    KleisliProcess {
-      clustalo ⇒ Process.eval { Task.delay(Command(s"$clustalo $params --force")!!) }
-    }
+  private def clustalΩ(params: String): KleisliP[Path, String] =
+    KleisliP { clustalo ⇒ AsyncP(Command(s"$clustalo $params --force")!!) }
 
-  def distanceMatrix(input: Path, alignment: Path, distmat: Path): KleisliProcess[Path, Unit] =
-    clustalΩ(s"-i $input -o $alignment --distmat-out=$distmat --percent-id --full").map(discard)
+  def distanceMatrix(input: Path, alignment: Path, distmat: Path): KleisliP[Path, Unit] =
+    clustalΩ(s"-i $input -o $alignment --distmat-out=$distmat --percent-id --full").void
 
-  def guideTree(input: Path, alignment: Path, tree: Path): KleisliProcess[Path, Unit] =
-    clustalΩ(s"-i $input -o $alignment --guidetree-out=$tree --full").map(discard)
+  def guideTree(input: Path, alignment: Path, tree: Path): KleisliP[Path, Unit] =
+    clustalΩ(s"-i $input -o $alignment --guidetree-out=$tree --full").void
 
-  def withDistanceMatrixOf[A](input: Path)(f: Path ⇒ Process[Task, A]): KleisliProcess[Path, A] = {
+  def withDistanceMatrixOf[A](input: Path)(f: Path ⇒ Process[Task, A]): KleisliP[Path, A] = {
     val distmat = input + ".distmat"
 
     def written = distanceMatrix(input, devnull, distmat)
-    def mapped  = KleisliProcess[Path, A](_ ⇒ f(distmat))
+    def mapped  = KleisliP[Path, A](_ ⇒ f(distmat))
 
     written *> mapped
   }

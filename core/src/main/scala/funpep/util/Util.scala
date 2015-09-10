@@ -3,16 +3,29 @@ package funpep
 package object util {
 
   object functions extends Functions
+  object types     extends Types
 
   object ops {
-    object foldable extends ToFoldableOps
-    object ilist    extends ToIListOps
-    object path     extends ToPathOps
-    object string   extends ToStringOps
+    object disjunction extends ToDisjunctionOps
+    object foldable    extends ToFoldableOps
+    object ilist       extends ToIListOps
+    object path        extends ToPathOps
+    object string      extends ToStringOps
 
-    object all extends ToFoldableOps with ToIListOps with ToPathOps with ToStringOps
+
+    object all extends ToDisjunctionOps
+                  with ToFoldableOps
+                  with ToIListOps
+                  with ToPathOps
+                  with ToStringOps
   }
 
-  object types extends Types
+  object all extends Functions
+                with Types
+                with ToDisjunctionOps
+                with ToFoldableOps
+                with ToIListOps
+                with ToPathOps
+                with ToStringOps
 
 }

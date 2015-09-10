@@ -11,8 +11,9 @@ import scalaz.stream._
 
 import atto._
 
-import util.ops.foldable._
 import util.types._
+import util.ops.foldable._
+import util.ops.path._
 
 
 final case class Fasta[A] (
@@ -74,7 +75,7 @@ final class FastaParser[A] private[data] (val compound: Parser[A])(implicit ev: 
     fasta.parseOnly(str).either
 
   def fromFile(path: Path): Process[Task, ErrorMsg ∨ Fasta[A]] =
-    nio.file.textR(AsynchronousFileChannel.open(path)).parse1(fasta).map(_.either)
+    nio.file.textR(path.openAsyncChannel).parse1(fasta).map(_.either)
 
 }
 
