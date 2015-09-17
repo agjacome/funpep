@@ -11,9 +11,9 @@ import scalaz.stream._
 
 import atto._
 
+import util.functions._
 import util.types._
 import util.ops.foldable._
-import util.ops.path._
 
 
 final case class Fasta[A] (
@@ -47,8 +47,6 @@ object Fasta {
 
 final class FastaParser[A] private[data] (val compound: Parser[A])(implicit ev: A ⇒ Compound) {
 
-  import java.nio.channels.AsynchronousFileChannel
-
   import scalaz.syntax.applicative._
   import scalaz.syntax.foldable._
 
@@ -56,7 +54,6 @@ final class FastaParser[A] private[data] (val compound: Parser[A])(implicit ev: 
   import atto.parser.combinator._
   import atto.parser.text._
   import atto.syntax.parser._
-  import atto.syntax.stream.all._
 
   lazy val fasta:    Parser[Fasta[A]]    = many1(sequence).map(ss ⇒ Fasta(ss))
   lazy val sequence: Parser[Sequence[A]] = (header |@| residues)(Sequence.apply)
@@ -74,8 +71,21 @@ final class FastaParser[A] private[data] (val compound: Parser[A])(implicit ev: 
   def fromString(str: String): ErrorMsg ∨ Fasta[A] =
     fasta.parseOnly(str).either
 
-  def fromFile(path: Path): Process[Task, ErrorMsg ∨ Fasta[A]] =
-    nio.file.textR(path.openAsyncChannel).parse1(fasta).map(_.either)
+  // FIXME: fromFile should be just something like:
+  //
+  //   def fromFile(path: Path): Process[Task, ErrorMsg ∨ Fasta[A]] =
+  //     nio.file.textR(path.openAsyncChannel).parse1(fasta).map(_.either)
+  //
+  // But an OutOfMemoryError is thrown with big enough files implementing it
+  // that way. It is also thrown if using a "parser.feed" with each line
+  // (folding a Foldable of Strings) instead of creating a big string and using
+  // "parseOnly" directly. I can't find the cause ATM, but will try to fix it in
+  // a future and stop using the current nonsense.
+  def fromFile(path: Path): Process[Task, ErrorMsg ∨ Fasta[A]] = {
+    import java.nio.file.Files
+    import scala.collection.JavaConverters._
+    AsyncP { fromString(Files.readAllLines(path).asScala.mkString("\n")) }
+  }
 
 }
 

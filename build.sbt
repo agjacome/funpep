@@ -23,8 +23,8 @@ lazy val core = module("core").settings(
 
     "org.scalaz.stream" %% "scalaz-stream" % "0.7.2a",
 
-    "org.tpolecat" %% "atto-core"   % "0.4.1",
-    "org.tpolecat" %% "atto-stream" % "0.4.1" exclude ("org.scalaz.stream", "scalaz-stream")
+    "org.tpolecat" %% "atto-core"   % "0.4.2",
+    "org.tpolecat" %% "atto-stream" % "0.4.2"
   ),
 
   initialCommands :=

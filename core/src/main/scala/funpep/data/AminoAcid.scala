@@ -16,6 +16,7 @@ sealed abstract class AminoAcid (
 
 object AminoAcid {
 
+  import atto.parser.character.optElem
   import Maybe.{ empty, just }
 
   case object Ala extends AminoAcid('A', just("Alanine"),        just( 71.0788))
@@ -54,18 +55,7 @@ object AminoAcid {
   implicit val AminoAcidEqual:  Equal[AminoAcid]  = Equal.equalA
   implicit val AminoAcidShow:   Show[AminoAcid]   = Show.shows(_.code.toString)
 
-  // cannot use optElem directly, see: https://github.com/tpolecat/atto/pull/20
-  implicit def AminoAcidParser: Parser[AminoAcid] = {
-    import atto.parser.combinator._
-    import atto.syntax.parser._
-
-    ensure(1) flatMap { s ⇒
-      codes.lookup(s.head.toUpper).cata(
-        a ⇒ advance(1) ~> ok(a),
-        err(s"Invalid aminoacid '${s.head}'")
-      )
-    }
-  }
+  implicit def AminoAcidParser: Parser[AminoAcid] = optElem(c ⇒ codes.lookup(c.toUpper))
 
   lazy val codes: Char ==>> AminoAcid = all.map(aa ⇒ (aa.code → aa)).toMap
 
