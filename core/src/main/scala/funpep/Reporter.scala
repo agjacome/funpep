@@ -30,8 +30,6 @@ object Reporter {
     type MLine  = (Int, Sequence.Header, IList[Double])
     type Matrix = IList[MLine]
 
-    lazy val header = """"Comparing ID","Comparing Sequence","Reference ID","Reference Sequence","Similarity Percentage""""
-
     // FIXME: Refactor. Do not .toList and call unsafe List ops, use IList and
     // Foldable directly
     def csvLine(line: MLine, matrix: Matrix, ref: Fasta[A], fil: Fasta[A]): Process[Task, String] = {
@@ -93,8 +91,11 @@ object Reporter {
         lines ← csvLines(ref, fil)
       } yield lines
 
+    def csvHeader: String =
+      """"Comparing ID","Comparing Sequence","Reference ID","Reference Sequence","Similarity Percentage""""
+
     csvContent.mapK[({ type λ[α] = Process[Task, α] })#λ, Unit] {
-      _.prepend(header :: Nil).map(_ + "\n").pipe(text.utf8Encode).to(nio.file.chunkW(csv))
+      _.prepend(csvHeader :: Nil).map(_ + "\n").pipe(text.utf8Encode).to(nio.file.chunkW(csv))
     }
   }
 
