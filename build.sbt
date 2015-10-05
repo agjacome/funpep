@@ -11,10 +11,10 @@ lazy val core = module("core").settings(
   description := "Core funpep library",
 
   libraryDependencies ++= Seq(
-    "org.scalaz"  %% "scalaz-core"       % "7.1.3",
-    "org.scalaz"  %% "scalaz-effect"     % "7.1.3",
-    "org.scalaz"  %% "scalaz-iteratee"   % "7.1.3",
-    "org.scalaz"  %% "scalaz-concurrent" % "7.1.3",
+    "org.scalaz"  %% "scalaz-core"       % "7.1.4",
+    "org.scalaz"  %% "scalaz-effect"     % "7.1.4",
+    "org.scalaz"  %% "scalaz-iteratee"   % "7.1.4",
+    "org.scalaz"  %% "scalaz-concurrent" % "7.1.4",
 
     "org.scalaz.stream" %% "scalaz-stream" % "0.7.2a",
 
