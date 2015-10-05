@@ -10,11 +10,6 @@ lazy val root = Project("funpep", file(".")).settings(common, metadata).settings
 lazy val core = module("core").settings(
   description := "Core funpep library",
 
-  resolvers ++= Seq(
-    "Scalaz Bintray Repo"   at "http://dl.bintray.com/scalaz/releases",
-    "tpolecat Bintray Repo" at "http://dl.bintray.com/tpolecat/maven"
-  ),
-
   libraryDependencies ++= Seq(
     "org.scalaz"  %% "scalaz-core"       % "7.1.3",
     "org.scalaz"  %% "scalaz-effect"     % "7.1.3",
@@ -24,7 +19,9 @@ lazy val core = module("core").settings(
     "org.scalaz.stream" %% "scalaz-stream" % "0.7.2a",
 
     "org.tpolecat" %% "atto-core"   % "0.4.2",
-    "org.tpolecat" %% "atto-stream" % "0.4.2"
+    "org.tpolecat" %% "atto-stream" % "0.4.2",
+
+    "org.biojava.thirdparty" % "forester" % "1.005"
   ),
 
   initialCommands :=
@@ -96,8 +93,6 @@ lazy val common = Seq(
   scalacOptions in (Compile, console) ~= { _ filterNot Set(
     "-Xfatal-warnings", "-Ywarn-unused-import"
   )},
-
-  // wartremoverWarnings ++= Warts.all,
 
   shellPrompt := { _ ⇒ s"${name.value} » " }
 )
