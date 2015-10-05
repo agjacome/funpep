@@ -14,6 +14,7 @@ import atto._
 import util.functions._
 import util.types._
 import util.ops.foldable._
+import util.ops.disjunction._
 
 
 final case class Fasta[A] (
@@ -71,7 +72,7 @@ final class FastaParser[A] private[data] (val compound: Parser[A])(implicit ev: 
   def fromString(str: String): ErrorMsg ∨ Fasta[A] =
     fasta.parseOnly(str).either
 
-  // FIXME: fromFile should be just something like:
+  // FIXME: fromFile should be something like:
   //
   //   def fromFile(path: Path): Process[Task, ErrorMsg ∨ Fasta[A]] =
   //     nio.file.textR(path.openAsyncChannel).parse1(fasta).map(_.either)
@@ -81,11 +82,13 @@ final class FastaParser[A] private[data] (val compound: Parser[A])(implicit ev: 
   // (folding a Foldable of Strings) instead of creating a big string and using
   // "parseOnly" directly. I can't find the cause ATM, but will try to fix it in
   // a future and stop using the current nonsense.
-  def fromFile(path: Path): Process[Task, ErrorMsg ∨ Fasta[A]] = {
-    import java.nio.file.Files
-    import scala.collection.JavaConverters._
-    AsyncP { fromString(Files.readAllLines(path).asScala.mkString("\n")) }
-  }
+  def fromFile(path: Path): Process[Task, ErrorMsg ∨ Fasta[A]] =
+    textR(path).map(fromString)
+
+  def fromFileW(path: Path): Process[Task, Fasta[A]] =
+    fromFile(path) flatMap {
+      parsed ⇒ Process.eval(parsed.toTask(identity))
+    }
 
 }
 

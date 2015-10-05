@@ -12,8 +12,8 @@ import scalaz.syntax.std.string._
 
 import data._
 import contrib._
+import util.functions._
 import util.types._
-import util.ops.disjunction._
 import util.ops.path._
 
 
@@ -27,8 +27,7 @@ object SimilarityFilter {
     KleisliP { clustalΩ ⇒
       val fastas = for {
         file   ← dir.children("*.{fasta,fas,fna,faa,ffn,frna}")
-        parsed ← parser.fromFile(file)
-        fasta  ← Process.eval(parsed.toTask(identity))
+        fasta  ← parser.fromFileW(file)
       } yield (file, fasta)
 
       val filtered = fastas map { case (path, fasta) ⇒
@@ -36,7 +35,7 @@ object SimilarityFilter {
         isSimilar.filter(identity).map(_ ⇒ fasta.entries.head)
       }
 
-      merge.mergeN(filtered)
+      MergeN(filtered)
     }
 
   def isFirstSimilarToRest[A](fasta: Fasta[A], fastaFile: Path, thres: Double): KleisliP[Path, Boolean] =

@@ -9,6 +9,7 @@ import scalaz.stream._
 import scalaz.syntax.foldable._
 
 import data._
+import util.functions._
 import util.ops.path._
 import util.ops.foldable._
 
@@ -27,6 +28,6 @@ object MergeSplitter {
   }
 
   def saveSplits[A, F[_]: Foldable](directory: Path)(splits: ⇒ F[Fasta[A]]): Process[Task, Path] =
-    merge.mergeN { splits.toProcess map saveSplit(directory) }
+    MergeN(splits.toProcessDelay map saveSplit(directory))
 
 }
