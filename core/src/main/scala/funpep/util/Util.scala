@@ -3,6 +3,7 @@ package funpep
 package object util {
 
   object functions extends Functions
+  object parsers   extends Parsers
   object types     extends Types
 
   object ops {
@@ -21,6 +22,7 @@ package object util {
   }
 
   object all extends Functions
+                with Parsers
                 with Types
                 with ToDisjunctionOps
                 with ToFoldableOps

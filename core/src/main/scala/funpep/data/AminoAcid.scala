@@ -7,7 +7,6 @@ import scalaz.syntax.std.option._
 
 import atto._
 
-
 sealed abstract class AminoAcid (
   val code: Char,
   val name: Maybe[String],
@@ -16,8 +15,9 @@ sealed abstract class AminoAcid (
 
 object AminoAcid {
 
+  import scalaz.Maybe.{ empty, just }
+
   import atto.parser.character.optElem
-  import Maybe.{ empty, just }
 
   case object Ala extends AminoAcid('A', just("Alanine"),        just( 71.0788))
   case object Arg extends AminoAcid('R', just("Arginine"),       just(156.1875))

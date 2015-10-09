@@ -8,11 +8,17 @@ import scalaz.syntax.equal._
 
 import scalaz.concurrent._
 import scalaz.stream._
+import scalaz.syntax.applicative._
+import scalaz.syntax.foldable._
 
 import atto._
+import atto.parser.character._
+import atto.parser.combinator._
+import atto.syntax.parser._
 
 import util.functions._
 import util.types._
+import util.parsers._
 import util.ops.foldable._
 import util.ops.disjunction._
 
@@ -48,26 +54,13 @@ object Fasta {
 
 final class FastaParser[A] private[data] (val compound: Parser[A])(implicit ev: A ⇒ Compound) {
 
-  import scalaz.syntax.applicative._
-  import scalaz.syntax.foldable._
-
-  import atto.parser.character._
-  import atto.parser.combinator._
-  import atto.parser.text._
-  import atto.syntax.parser._
-
   lazy val fasta:    Parser[Fasta[A]]    = many1(sequence).map(ss ⇒ Fasta(ss))
   lazy val sequence: Parser[Sequence[A]] = (header |@| residues)(Sequence.apply)
 
-  lazy val header:   Parser[String]   = char('>') ~> takeWhile(c ⇒ c != '\r' && c != '\n') <~ eol
+  lazy val header:   Parser[String]   = char('>') ~> takeLine <~ eol
   lazy val residues: Parser[IList[A]] = many1(residuesLine).map(_.toIList.flatten)
 
   lazy val residuesLine: Parser[IList[A]] = (many1(compound) <~ (eol | eoi)).map(_.toIList)
-
-  lazy val eoi: Parser[Unit] = atto.parser.combinator.endOfInput
-  lazy val eol: Parser[Unit] = (cr | lf | cr ~ lf) map { _ ⇒ () }
-  lazy val cr:  Parser[Char] = char(0x0D)
-  lazy val lf:  Parser[Char] = char(0x0A)
 
   def fromString(str: String): ErrorMsg ∨ Fasta[A] =
     fasta.parseOnly(str).either
@@ -105,6 +98,9 @@ object FastaParser {
 
   def fromFile[A](path: Path)(implicit parser: Parser[A], ev: A ⇒ Compound): Process[Task, ErrorMsg ∨ Fasta[A]] =
     FastaParser[A].fromFile(path)
+
+  def fromFileW[A](path: Path)(implicit parser: Parser[A], ev: A ⇒ Compound): Process[Task, Fasta[A]] =
+    FastaParser[A].fromFileW(path)
 
 }
 
