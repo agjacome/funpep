@@ -66,19 +66,19 @@ object Analysis {
     implicit val StatusEqual: Equal[Status] = Equal.equalA
 
     implicit val StatusShow: Show[Status] = Show.shows({
-      case Created(t)   ⇒ s"created:${t.getEpochSecond}"
-      case Started(t)   ⇒ s"started:${t.getEpochSecond}"
-      case Finished(t)  ⇒ s"finished:${t.getEpochSecond}"
-      case Failed(t, e) ⇒ s"failed:${t.getEpochSecond}:$e"
+      case Created(t)   ⇒ s"created - ${t.getEpochSecond}"
+      case Started(t)   ⇒ s"started - ${t.getEpochSecond}"
+      case Finished(t)  ⇒ s"finished - ${t.getEpochSecond}"
+      case Failed(t, e) ⇒ s"failed - ${t.getEpochSecond} - $e"
     })
 
     lazy val parser: Parser[Status] = {
       lazy val instant: Parser[Instant] = long.map(Instant.ofEpochSecond)
 
-      (string("created")  ~> sep(':') ~> instant).map(Created.apply)  |
-      (string("started")  ~> sep(':') ~> instant).map(Started.apply)  |
-      (string("finished") ~> sep(':') ~> instant).map(Finished.apply) |
-      (string("failed")   ~> sep(':') ~> instant ~ (sep(':') ~> takeLine)).map(Failed.tupled)
+      (string("created")  ~> sep('-') ~> instant).map(Created.apply)  |
+      (string("started")  ~> sep('-') ~> instant).map(Started.apply)  |
+      (string("finished") ~> sep('-') ~> instant).map(Finished.apply) |
+      (string("failed")   ~> sep('-') ~> instant ~ (sep('-') ~> takeLine)).map(Failed.tupled)
     }
 
   }
@@ -110,12 +110,10 @@ object AnalysisParser {
   lazy val threshold: Parser[Double] = string("threshold") ~> sep(':') ~> double        <~ eol
 
   lazy val annotations: Parser[Header ==>> String] =
-    annotHeader ~> sepBy(annot, skipWhitespaceLine) map { as ⇒ ==>>.fromList(as) }
+    string("annotations") ~> sep(':') ~> eol ~>
+    sepBy(annotation, skipWhitespaceLine) map { as ⇒ ==>>.fromList(as) }
 
-  lazy val annotHeader: Parser[Unit] =
-    string("annotations") ~> sep(':') ~> eol
-
-  lazy val annot: Parser[(Header, String)] =
+  lazy val annotation: Parser[(Header, String)] =
     stringLiteral ~ (annotationSep ~> stringLiteral)
 
   lazy val annotationSep: Parser[Unit] =
