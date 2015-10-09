@@ -25,11 +25,11 @@ import util.ops.string._
 
 
 final case class Analysis (
-  id:          UUID,
+  id:          Analysis.ID,
   status:      Analysis.Status,
   directory:   Path,
   threshold:   Double,
-  annotations: Sequence.Header ==>> String
+  annotations: Analysis.Annotations
 ) {
 
   def withStatus(s: Analysis.Status): Analysis =
@@ -51,9 +51,16 @@ final case class Analysis (
         |""".stripMargin
   }
 
+  def toFile(path: Path): Process[Task, Unit] =
+    Process(toString).pipe(text.utf8Encode).to(nio.file.chunkW(path))
+
 }
 
 object Analysis {
+
+  type ID          = UUID
+  type Annotation  = (Sequence.Header, String)
+  type Annotations = Sequence.Header ==>> String
 
   sealed trait Status { def timestamp: Instant }
   final case class Created  (timestamp: Instant) extends Status
@@ -86,15 +93,16 @@ object Analysis {
   implicit val AnalysisEqual: Equal[Analysis] = Equal.equalA.contramap(_.id)
   implicit val AnalysisShow:  Show[Analysis]  = Show.showA
 
-  def apply(path: Path, thres: Double, annots: Sequence.Header ==>> String): Analysis =
-    new Analysis(UUID.randomUUID, Created(Instant.now), path, thres, annots)
+  def apply(parentDir: Path, thres: Double, annots: Annotations): Analysis = {
+    val id = UUID.randomUUID
+    new Analysis(id, Created(Instant.now), parentDir / id.toString, thres, annots)
+  }
 
 }
 
 object AnalysisParser {
 
-  import Analysis.Status
-  import Sequence.Header
+  import Analysis._
 
   lazy val analysis: Parser[Analysis] = (
     (id          <~ skipWhitespace) |@|
@@ -104,16 +112,16 @@ object AnalysisParser {
     (annotations <~ skipWhitespace)
   ) { Analysis.apply }
 
-  lazy val id:        Parser[UUID]   = string("id")        ~> sep(':') ~> uuid          <~ eol
+  lazy val id:        Parser[ID]     = string("id")        ~> sep(':') ~> uuid          <~ eol
   lazy val status:    Parser[Status] = string("status")    ~> sep(':') ~> Status.parser <~ eol
   lazy val directory: Parser[Path]   = string("directory") ~> sep(':') ~> stringLiteral <~ eol map (_.toPath)
   lazy val threshold: Parser[Double] = string("threshold") ~> sep(':') ~> double        <~ eol
 
-  lazy val annotations: Parser[Header ==>> String] =
+  lazy val annotations: Parser[Annotations] =
     string("annotations") ~> sep(':') ~> eol ~>
     sepBy(annotation, skipWhitespaceLine) map { as ⇒ ==>>.fromList(as) }
 
-  lazy val annotation: Parser[(Header, String)] =
+  lazy val annotation: Parser[Annotation] =
     stringLiteral ~ (annotationSep ~> stringLiteral)
 
   lazy val annotationSep: Parser[Unit] =
@@ -138,7 +146,7 @@ object AnalysisPrinter {
     analysis.shows
 
   def toFile(analysis: Analysis, path: Path): Process[Task, Unit] =
-    Process(analysis.shows).pipe(text.utf8Encode).to(nio.file.chunkW(path))
+    analysis.toFile(path)
 
   def toStdOut(analysis: Analysis): Process[Task, Unit] =
     Process(analysis.shows).to(io.stdOut)
