@@ -1,12 +1,14 @@
 package funpep
 package util
 
-import java.nio.file.{ DirectoryStream, Files, Path, Paths }
+import java.io.IOException
+import java.nio.file._
+import java.nio.file.attribute._
 import java.nio.channels.AsynchronousFileChannel
 
 import scalaz.concurrent._
 import scalaz.stream._
-import scalaz.syntax.functor._
+import scalaz.syntax.applicative._
 
 import functions.AsyncP
 
@@ -22,8 +24,33 @@ final class PathOps private[util] (val self: Path) extends AnyVal {
   def create: Process[Task, Unit] =
     AsyncP(Files.createFile(self)).void
 
+  def createDir: Process[Task, Unit] =
+    AsyncP(Files.createDirectories(self)).void
+
   def delete: Process[Task, Unit] =
     AsyncP(Files.deleteIfExists(self)).void
+
+  def deleteRecursive: Process[Task, Unit] = {
+    @inline // messy java 7 filetree walker
+    def deleteR(dir: Path): Unit = {
+      Files.walkFileTree(self, new SimpleFileVisitor[Path] {
+        override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+          Files.delete(file)
+          FileVisitResult.CONTINUE
+        }
+
+        override def postVisitDirectory(dir: Path, exc: IOException): FileVisitResult = {
+          Files.delete(dir)
+          FileVisitResult.CONTINUE
+        }
+      })
+
+      Files.deleteIfExists(dir)
+      ()
+    }
+
+    AsyncP(deleteR(self))
+  }
 
   def children(glob: String): Process[Task, Path] = {
     import Cause.{ Terminated, End }
