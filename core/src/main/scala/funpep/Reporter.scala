@@ -95,7 +95,7 @@ object Reporter {
       """"Comparing ID","Comparing Sequence","Reference ID","Reference Sequence","Similarity Percentage""""
 
     csvContent.mapK[({ type λ[α] = Process[Task, α] })#λ, Unit] {
-      _.prepend(csvHeader :: Nil).map(_ + "\n").pipe(text.utf8Encode).to(nio.file.chunkW(csv))
+      _.prepend(csvHeader :: Nil).intersperse("\n").pipe(text.utf8Encode).to(nio.file.chunkW(csv))
     }
   }
 
