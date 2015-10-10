@@ -10,6 +10,7 @@ import scalaz.stream._
 import scalaz.std.string._
 import scalaz.syntax.applicative._
 import scalaz.syntax.foldable._
+import scalaz.syntax.kleisli._
 import scalaz.syntax.std.option._
 import scalaz.syntax.std.string._
 
@@ -78,16 +79,16 @@ object Reporter {
 
       for {
         rawM     ← readM
-        parsedM  ← KleisliP[Path, Matrix](_ ⇒ parseM(rawM))
-        parsedML ← KleisliP[Path, MLine ](_ ⇒ parsedM.toProcess)
-        reportL  ← KleisliP[Path, String](_ ⇒ csvLine(parsedML, parsedM, ref, fil))
+        parsedM  ← parseM(rawM).liftKleisli
+        parsedML ← parsedM.toProcess.liftKleisli
+        reportL  ← csvLine(parsedML, parsedM, ref, fil).liftKleisli
       } yield reportL
     }
 
     def csvContent: KleisliP[Path, String] =
       for {
-        ref   ← KleisliP[Path, Fasta[A]](_ ⇒ parser.fromFileW(reference))
-        fil   ← KleisliP[Path, Fasta[A]](_ ⇒ parser.fromFileW(filtered))
+        ref   ← parser.fromFileW(reference).liftKleisli
+        fil   ← parser.fromFileW(filtered).liftKleisli
         lines ← csvLines(ref, fil)
       } yield lines
 

@@ -7,7 +7,8 @@ import scala.sys.process.{ Process ⇒ Command }
 
 import scalaz.stream._
 import scalaz.concurrent._
-import scalaz.syntax.apply._
+import scalaz.syntax.applicative._
+import scalaz.syntax.kleisli._
 
 import util.functions._
 import util.types._
@@ -27,11 +28,7 @@ object Clustal {
 
   def withDistanceMatrixOf[A](input: Path)(f: Path ⇒ Process[Task, A]): KleisliP[Path, A] = {
     val distmat = input + ".distmat"
-
-    def written = distanceMatrix(input, devnull, distmat)
-    def mapped  = KleisliP[Path, A](_ ⇒ f(distmat))
-
-    written *> mapped
+    distanceMatrix(input, devnull, distmat) *> f(distmat).liftKleisli
   }
 
 }

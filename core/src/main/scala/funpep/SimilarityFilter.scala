@@ -6,8 +6,7 @@ import scalaz._
 import scalaz.concurrent._
 import scalaz.stream._
 import scalaz.std.list._
-import scalaz.syntax.apply._
-import scalaz.syntax.traverse._
+import scalaz.syntax.applicative._
 import scalaz.syntax.std.string._
 
 import data._
@@ -32,7 +31,7 @@ object SimilarityFilter {
 
       val filtered = fastas map { case (path, fasta) ⇒
         val isSimilar = isFirstSimilarToRest(fasta, path, thres).apply(clustalΩ)
-        isSimilar.filter(identity).map(_ ⇒ fasta.entries.head)
+        isSimilar.filter(identity) >| fasta.entries.head
       }
 
       MergeN(filtered)
@@ -46,6 +45,8 @@ object SimilarityFilter {
   // TODO: use atto, it will be nicer than raw string manipulation (maybe
   // slower, but who cares?; and also get rid of that nasty "+ 12")
   def similarOverThreshold[A](seq: Sequence[A], thres: Double, matrix: Path): Process[Task, Boolean] = {
+    import scalaz.syntax.traverse._
+
     def maxDistanceInLine(line: String): Maybe[Double] = {
       val distances = line.drop(seq.header.length + 12).split("\\s+").toList
       distances.traverse(_.parseDouble.toMaybe).map(_.max)

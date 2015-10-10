@@ -6,6 +6,7 @@ import java.util.UUID.randomUUID
 import scalaz._
 import scalaz.concurrent._
 import scalaz.stream._
+import scalaz.syntax.functor._
 import scalaz.syntax.foldable._
 
 import data._
@@ -24,7 +25,7 @@ object MergeSplitter {
 
   def saveSplit[A](directory: Path)(split: Fasta[A]): Process[Task, Path] = {
     val path = directory / randomUUID.toString + ".fasta"
-    split.toFile(path).map(_ ⇒ path)
+    split.toFile(path) >| path
   }
 
   def saveSplits[A, F[_]: Foldable](directory: Path)(splits: ⇒ F[Fasta[A]]): Process[Task, Path] =

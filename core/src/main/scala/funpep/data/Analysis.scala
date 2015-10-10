@@ -9,8 +9,8 @@ import scalaz._
 import scalaz.concurrent._
 import scalaz.stream._
 import scalaz.std.string._
-import scalaz.syntax.show._
 import scalaz.syntax.applicative._
+import scalaz.syntax.show._
 
 import atto._
 import atto.parser.all._
