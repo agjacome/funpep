@@ -3,7 +3,7 @@ package funpep
 import java.nio.file.Path
 
 import scalaz._
-import scalaz.concurrent._
+import scalaz.concurrent.{ Strategy, Task }
 import scalaz.stream._
 import scalaz.stream.merge._
 import scalaz.std.list._

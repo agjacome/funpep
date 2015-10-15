@@ -3,15 +3,14 @@ package funpep
 import java.nio.file.Path
 import java.util.UUID.randomUUID
 
-import scalaz.concurrent._
+import scalaz.concurrent.{ Strategy, Task }
 import scalaz.stream._
 import scalaz.stream.merge._
 import scalaz.syntax.functor._
 
 import data._
-// import util.functions._
-import util.ops.path._
 import util.ops.foldable._
+import util.ops.path._
 
 
 object MergeSplitter {
@@ -28,6 +27,6 @@ object MergeSplitter {
   }
 
   def saveSplits[A](directory: Path)(splits: Process[Task, Fasta[A]])(implicit st: Strategy): Process[Task, Path] =
-    mergeN { splits map saveSplit(directory) }
+    mergeN(splits map saveSplit(directory))
 
 }

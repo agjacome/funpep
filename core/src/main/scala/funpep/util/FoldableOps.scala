@@ -35,9 +35,7 @@ final class FoldableOps[F[_], A] private[util] (val self: F[A])(implicit val F: 
     ISet.fromFoldable(self)
 
   def toProcess: Process[Task, A] =
-    F.foldRight(self, Process.empty[Task, A]) {
-      (a, proc) ⇒ proc merge Process.eval(Task(a))
-    }
+    Process.emitAll { F.toList(self) }
 
 }
 
