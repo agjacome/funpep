@@ -1,8 +1,3 @@
-version      in ThisBuild := "0.1.0-SNAPSHOT"
-apiVersion   in ThisBuild := getApiVersion(version.value)
-scalaVersion in ThisBuild := "2.11.7"
-javaVersion  in ThisBuild := "1.8"
-
 lazy val root = Project("funpep", file(".")).settings(common, metadata).settings(
   description := "Functional enrichment of peptide data sets"
 ).aggregate(core, server)
@@ -52,6 +47,12 @@ lazy val server = module("server").settings(
 ).dependsOn(core % "compile;test->test")
 
 lazy val common = Seq(
+
+  version      in ThisBuild := "0.1.0-SNAPSHOT",
+  apiVersion   in ThisBuild := (0, 1),
+
+  scalaVersion in ThisBuild := "2.11.7",
+  javaVersion  in ThisBuild := "1.8",
 
   // for jvm 1.8 optimizations
   // libraryDependencies += "org.scala-lang.modules" %% "scala-java8-compat" % "0.5.0",
@@ -115,3 +116,6 @@ lazy val metadata = Seq(
 
 def module(name: String): Project =
   Project(s"funpep-$name", file(name)).settings(common, metadata)
+
+val apiVersion  = TaskKey[(Int, Int)]("api-version", "Defines the API compatibility version")
+val javaVersion = TaskKey[String]("java-version", "Defines the target JVM version")
