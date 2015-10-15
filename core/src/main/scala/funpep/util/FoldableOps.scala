@@ -39,11 +39,6 @@ final class FoldableOps[F[_], A] private[util] (val self: F[A])(implicit val F: 
       (a, proc) ⇒ proc merge Process.eval(Task(a))
     }
 
-  def toProcessDelay: Process[Task, A] =
-    F.foldRight(self, Process.empty[Task, A]) {
-      (a, proc) ⇒ proc merge Process.eval(Task.delay(a))
-    }
-
 }
 
 trait ToFoldableOps {

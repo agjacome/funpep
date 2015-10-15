@@ -55,9 +55,9 @@ final class PathOps private[util] (val self: Path) extends AnyVal {
   def children(glob: String): Process[Task, Path] = {
     import Cause.{ Terminated, End }
 
-    io.resource(Task.delay(Files.newDirectoryStream(self, glob)))(s ⇒ Task.delay(s.close)) { s ⇒
+    io.resource(Task(Files.newDirectoryStream(self, glob)))(s ⇒ Task(s.close)) { s ⇒
       val iter = s.iterator
-      Task.delay {
+      Task {
         if (iter.hasNext) iter.next
         else throw Terminated(End)
       }

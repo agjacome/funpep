@@ -19,8 +19,8 @@ import atto.syntax.parser._
 import util.functions._
 import util.types._
 import util.parsers._
-import util.ops.foldable._
 import util.ops.disjunction._
+import util.ops.foldable._
 
 
 final case class Fasta[A] (
@@ -49,6 +49,12 @@ object Fasta {
 
   implicit def FastaShow[A]: Show[Fasta[A]] =
     Show.shows(_.toString(70))
+
+  implicit def FastaSemigroup[A](implicit ev: A ⇒ Compound): Semigroup[Fasta[A]] =
+    new Semigroup[Fasta[A]] {
+      override def append(f1: Fasta[A], f2: ⇒ Fasta[A]): Fasta[A] =
+        Fasta(Semigroup[NonEmptyList[Sequence[A]]].append(f1.entries, f2.entries))
+    }
 
 }
 

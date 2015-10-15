@@ -5,24 +5,24 @@ import java.nio.file.Path
 import scalaz._
 import scalaz.concurrent._
 import scalaz.stream._
+import scalaz.stream.merge._
 import scalaz.std.list._
 import scalaz.syntax.applicative._
 import scalaz.syntax.std.string._
 
 import data._
 import contrib._
-import util.functions._
 import util.types._
 import util.ops.path._
 
 
 object SimilarityFilter {
 
-  def apply[A](dir: Path, thres: Double, parser: FastaParser[A]): KleisliP[Path, Sequence[A]] =
+  def apply[A](dir: Path, thres: Double, parser: FastaParser[A])(implicit st: Strategy): KleisliP[Path, Sequence[A]] =
     filterSimilarSequences(dir, thres, parser)
 
   // FIXME: ugly as shit
-  def filterSimilarSequences[A](dir: Path, thres: Double, parser: FastaParser[A]): KleisliP[Path, Sequence[A]] =
+  def filterSimilarSequences[A](dir: Path, thres: Double, parser: FastaParser[A])(implicit st: Strategy): KleisliP[Path, Sequence[A]] =
     KleisliP { clustalΩ ⇒
       val fastas = for {
         file   ← dir.children("*.{fasta,fas,fna,faa,ffn,frna}")
@@ -34,7 +34,7 @@ object SimilarityFilter {
         isSimilar.filter(identity) >| fasta.entries.head
       }
 
-      MergeN(filtered)
+      mergeN(filtered)
     }
 
   def isFirstSimilarToRest[A](fasta: Fasta[A], fastaFile: Path, thres: Double): KleisliP[Path, Boolean] =
