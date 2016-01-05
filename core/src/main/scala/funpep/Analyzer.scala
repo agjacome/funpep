@@ -18,6 +18,8 @@ import util.types._
 import util.ops.path._
 
 
+// TODO: handle failures; logging through Writer of NonEmptyList[String],
+// provide a scalaz-stream Sink as argument and just log to it ???
 final class Analyzer[A] private (
   val database: Path,
   val parser:   FastaParser[A]
@@ -35,6 +37,19 @@ final class Analyzer[A] private (
       _ ← cmp.toFile(a.comparing)
     } yield a
 
+  def clear(analysis: Analysis): Process[Task, Analysis] = {
+    val clean = analysis.withStatus(Created(now))
+
+    clean.temporal.deleteRecursive  *>
+    clean.filtered.delete           *>
+    clean.alignment.delete          *>
+    clean.newick.delete             *>
+    clean.phyloXML.delete           *>
+    clean.treeImage.delete          *>
+    clean.csvReport.delete          *>
+    clean.toFile(analysis.metadata) >| clean
+  }
+
   def analyze(analysis: Analysis): KleisliP[Path, Analysis] =
     for {
       ref ← parser.fromFileW(analysis.reference).liftKleisli
@@ -42,7 +57,6 @@ final class Analyzer[A] private (
       out ← analyze(analysis, ref, cmp)
     } yield out
 
-  // TODO: handle failures, logging
   def analyze(analysis: Analysis, ref: Fasta[A], cmp: Fasta[A]): KleisliP[Path, Analysis] =
     for {
       in  ← start(analysis)
@@ -50,7 +64,7 @@ final class Analyzer[A] private (
       fil ← filter(ref, in)
       _   ← fil.toFile(in.filtered).liftKleisli
       _   ← align(in)
-      _   ← report(in)
+      _   ← report(ref, fil, in)
       out ← finish(in)
     } yield out
 
@@ -80,11 +94,9 @@ final class Analyzer[A] private (
   private def align(analysis: Analysis): KleisliP[Path, Unit] =
     Clustal.guideTree(analysis.filtered, analysis.alignment, analysis.newick)
 
-  private def report(analysis: Analysis): KleisliP[Path, Unit] = {
-    import Reporter._
-
-    generateCSVFile(analysis.reference, analysis.filtered, parser)(analysis.csvReport) *>
-    generateTreeFiles(analysis.newick, analysis.annotations)(analysis.phyloXML, analysis.treeImage).liftKleisli
+  private def report(reference: Fasta[A], filtered: Fasta[A], analysis: Analysis): KleisliP[Path, Unit] = {
+    CSVReporter.report(reference, filtered, analysis.csvReport) *>
+    TreeReporter.generateTreeFiles(analysis.newick, analysis.annotations)(analysis.phyloXML, analysis.treeImage).liftKleisli
   }
 
 }
@@ -104,7 +116,7 @@ object Analyzer {
     def csvReport: Path = analysis.directory / "report.csv"
   }
 
-  def apply[A](database: Path)(implicit parser: Parser[A], ev: A ⇒ Compound): Analyzer[A] =
+  def apply[A](database: Path)(implicit parser: Parser[A], ev: A ⇒ Compound, st: Strategy): Analyzer[A] =
     new Analyzer(database, FastaParser[A])
 
 }

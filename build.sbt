@@ -1,22 +1,22 @@
-lazy val root = Project("funpep", file(".")).settings(common, metadata).settings(
-  description := "Functional enrichment of peptide data sets"
-).aggregate(core, server)
+lazy val root = Project("funpep", file("."))
+  .settings(common, metadata)
+  .settings(description := "Functional enrichment of peptide data sets")
+  .aggregate(core, server)
 
 lazy val core = module("core").settings(
   description := "Core funpep library",
 
-  libraryDependencies ++= Seq(
-    "org.scalaz"  %% "scalaz-core"       % "7.1.4",
-    "org.scalaz"  %% "scalaz-effect"     % "7.1.4",
-    "org.scalaz"  %% "scalaz-iteratee"   % "7.1.4",
-    "org.scalaz"  %% "scalaz-concurrent" % "7.1.4",
+  libraryDependencies ++= List(
+    "org.scalaz" %% "scalaz-core"       % "7.1.5",
+    "org.scalaz" %% "scalaz-concurrent" % "7.1.5",
 
     "org.scalaz.stream" %% "scalaz-stream" % "0.7.2a",
 
     "org.tpolecat" %% "atto-core"   % "0.4.2",
     "org.tpolecat" %% "atto-stream" % "0.4.2",
 
-    "org.biojava.thirdparty" % "forester" % "1.005"
+    "commons-io"             % "commons-io" % "2.4",
+    "org.biojava.thirdparty" % "forester"   % "1.005"
   ),
 
   initialCommands :=
@@ -30,34 +30,26 @@ lazy val core = module("core").settings(
        import funpep.util.all._"""
 )
 
-lazy val server = module("server").settings(
+lazy val server = module("server").dependsOn(core).settings(
   description := "HTTP server providing a REST API to access funpep",
 
-  resolvers += "Oncue Bintray Repo" at "http://dl.bintray.com/oncue/releases",
-
-  libraryDependencies ++= Seq(
+  libraryDependencies ++= List(
     "io.argonaut" %% "argonaut" % "6.0.4" exclude("org.scalaz", "scalaz-core_2.11"),
 
     "org.http4s"  %% "http4s-dsl"         % "0.8.4",
     "org.http4s"  %% "http4s-argonaut"    % "0.8.4" exclude("io.argonaut", "argonaut_2.11"),
-    "org.http4s"  %% "http4s-blazeserver" % "0.8.4",
-
-    "oncue.journal" %% "core" % "2.2.1"
+    "org.http4s"  %% "http4s-blazeserver" % "0.8.4"
   )
-).dependsOn(core % "compile;test->test")
+)
 
-lazy val common = Seq(
+lazy val common = List(
 
-  version      in ThisBuild := "0.1.0-SNAPSHOT",
-  apiVersion   in ThisBuild := (0, 1),
+  version in ThisBuild := "0.1.0-SNAPSHOT",
 
   scalaVersion in ThisBuild := "2.11.7",
   javaVersion  in ThisBuild := "1.8",
 
-  // for jvm 1.8 optimizations
-  // libraryDependencies += "org.scala-lang.modules" %% "scala-java8-compat" % "0.5.0",
-
-  scalacOptions ++= Seq(
+  scalacOptions ++= List(
     "-deprecation",
     "-encoding", "UTF-8",
     "-feature",
@@ -75,16 +67,9 @@ lazy val common = Seq(
     "-Ywarn-unused-import",
     "-Ywarn-value-discard",
     s"-target:jvm-${javaVersion.value}"
-
-    // scala 2.11.7 ↔ jvm 1.8 optimizations (requires scala-java8-compat)
-    // disabled because it is causing some troubles at the moment, will reenable
-    // in a future and try to actually solve them
-    // "-Ybackend:GenBCode",
-    // "-Ydelambdafy:method",
-    // "-Yopt:l:classpath"
   ),
 
-  javacOptions ++= Seq(
+  javacOptions ++= List(
     "-source", javaVersion.value,
     "-target", javaVersion.value,
     "-Xlint:deprecation",
@@ -98,16 +83,13 @@ lazy val common = Seq(
   shellPrompt := { _ ⇒ s"${name.value} » " }
 )
 
-lazy val metadata = Seq(
+lazy val metadata = List(
   organization := "es.uvigo.ei.sing",
-  developers := List(
-    Developer("agjacome", "Alberto G. Jácome"  , "agjacome@esei.uvigo.es", url("https://github.com/agjacome")),
-    Developer("aitorbm" , "Aitor Blanco Míguez", "aitorbm@esei.uvigo.es" , url("https://github.com/aitorbm" ))
-  ),
-  startYear := Some(2015),
-  homepage  := Some(url("http://sing.ei.uvigo.es/funpep")),
-  licenses  := Seq("MIT License" -> url("http://www.opensource.org/licenses/mit-license.html")),
-  scmInfo   := Some(ScmInfo(
+  developers   := Developer("agjacome", "Alberto G. Jácome", "agjacome@esei.uvigo.es", url("https://github.com/agjacome")) :: Nil,
+  startYear    := Option(2015),
+  homepage     := Some(url("http://sing.ei.uvigo.es/funpep")),
+  licenses     := List("MIT License" -> url("http://www.opensource.org/licenses/mit-license.html")),
+  scmInfo      := Some(ScmInfo(
     url("https://github.com/agjacome/funpep"),
     "scm:git:https://github.com/agjacome/funpep",
     Some("scm:git:git@github.com/agjacome/funpep")
@@ -117,5 +99,4 @@ lazy val metadata = Seq(
 def module(name: String): Project =
   Project(s"funpep-$name", file(name)).settings(common, metadata)
 
-val apiVersion  = TaskKey[(Int, Int)]("api-version", "Defines the API compatibility version")
 val javaVersion = TaskKey[String]("java-version", "Defines the target JVM version")

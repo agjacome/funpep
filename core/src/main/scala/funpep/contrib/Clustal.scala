@@ -17,8 +17,8 @@ import util.ops.path._
 
 object Clustal {
 
-  private def clustalΩ(params: String): KleisliP[Path, String] =
-    KleisliP { clustalo ⇒ AsyncP(Command(s"$clustalo $params --force")!!) }
+  private def clustalΩ(params: String): KleisliP[Path, Int] =
+    KleisliP { clustalo ⇒ AsyncP(Command(s"$clustalo $params --threads=$processors --force").!) }
 
   def distanceMatrix(input: Path, alignment: Path, distmat: Path): KleisliP[Path, Unit] =
     clustalΩ(s"-i $input -o $alignment --distmat-out=$distmat --percent-id --full").void

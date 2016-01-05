@@ -3,8 +3,8 @@ package funpep
 import java.nio.file.Path
 import java.util.UUID.randomUUID
 
-import scalaz.concurrent.{ Strategy, Task }
 import scalaz.stream._
+import scalaz.concurrent._
 import scalaz.stream.merge._
 import scalaz.syntax.functor._
 
