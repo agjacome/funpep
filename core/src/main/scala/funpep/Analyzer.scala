@@ -88,7 +88,7 @@ final class Analyzer[A] private (
 
   private def filter(reference: Fasta[A], analysis: Analysis): KleisliP[Path, Fasta[A]] = {
     val filterProc = SimilarityFilter(analysis.temporal, analysis.threshold, parser)
-    filterProc.mapK[({ type λ[α] = Process[Task, α] })#λ, Fasta[A]](_.reduceMap(seq ⇒ Fasta(seq)))
+    filterProc.mapK[Process[Task, ?], Fasta[A]](_.reduceMap(seq ⇒ Fasta(seq)))
   }
 
   private def align(analysis: Analysis): KleisliP[Path, Unit] =

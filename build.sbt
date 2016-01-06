@@ -38,7 +38,9 @@ lazy val server = module("server").dependsOn(core).settings(
 
     "org.http4s"  %% "http4s-dsl"         % "0.8.4",
     "org.http4s"  %% "http4s-argonaut"    % "0.8.4" exclude("io.argonaut", "argonaut_2.11"),
-    "org.http4s"  %% "http4s-blazeserver" % "0.8.4"
+    "org.http4s"  %% "http4s-blazeserver" % "0.8.4",
+
+    "me.lessis" %% "courier" % "0.1.3"
   )
 )
 
@@ -48,6 +50,8 @@ lazy val common = List(
 
   scalaVersion in ThisBuild := "2.11.7",
   javaVersion  in ThisBuild := "1.8",
+
+  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.7.1"),
 
   scalacOptions ++= List(
     "-deprecation",

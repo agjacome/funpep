@@ -37,7 +37,7 @@ final class CSVReporter[A] private (
   lazy val referenceSize = reference.entries.size
 
   def report(file: Path): KleisliP[Path, Unit] =
-    reportLines.mapK[({ type λ[α] = Process[Task, α] })#λ, Unit] {
+    reportLines.mapK[Process[Task, ?], Unit] {
       _.prepend(csvHeader :: Nil).intersperse("\n").pipe(text.utf8Encode).to(nio.file.chunkW(file))
     }
 
