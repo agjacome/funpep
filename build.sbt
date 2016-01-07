@@ -40,7 +40,8 @@ lazy val server = module("server").dependsOn(core).settings(
     "org.http4s"  %% "http4s-argonaut"    % "0.8.4" exclude("io.argonaut", "argonaut_2.11"),
     "org.http4s"  %% "http4s-blazeserver" % "0.8.4",
 
-    "me.lessis" %% "courier" % "0.1.3"
+    "me.lessis"     %% "courier" % "0.1.3",
+    "oncue.journal" %% "core"    % "2.2.1"
   )
 )
 

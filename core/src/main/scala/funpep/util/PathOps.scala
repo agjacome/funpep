@@ -18,6 +18,9 @@ final class PathOps private[util] (val self: Path) extends AnyVal {
   def openAsyncChannel: AsynchronousFileChannel =
     AsynchronousFileChannel.open(self)
 
+  def openAsyncChannel(ops: OpenOption*): AsynchronousFileChannel =
+    AsynchronousFileChannel.open(self, ops: _*)
+
   def exists: Process[Task, Boolean] =
     AsyncP(Files.exists(self))
 

@@ -27,7 +27,9 @@ private[util] trait Functions {
     Process.eval { Task(a) }
 
   def linesR(path: Path): Process[Task, IList[String]] =
-    AsyncP { Files.readAllLines(path).asScala.toList.toIList }
+    Process.eval(Task.delay {
+      Files.readAllLines(path).asScala.toList.toIList
+    })
 
   def textR(path: Path): Process[Task, String] =
     linesR(path).map(_.mkString(identity, "\n"))
