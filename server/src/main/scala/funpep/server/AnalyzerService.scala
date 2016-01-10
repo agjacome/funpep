@@ -7,7 +7,10 @@ import scala.concurrent.ExecutionContext
 import scalaz.concurrent._
 import scalaz.stream._
 import scalaz.std.option._
+import scalaz.std.string._
 import scalaz.syntax.std.boolean._
+
+import atto._
 
 import argonaut._
 import argonaut.Argonaut._
@@ -27,10 +30,13 @@ import util.extractors._
 import util.functions._
 
 
-final class AnalyzerService[A] private (val queue: AnalyzerQueue[A]) {
+final class AnalyzerService[A] private (
+  val queue: AnalyzerQueue[A]
+)(implicit parser: Parser[A], ev: A ⇒ Compound) {
 
-  def analyzer: Analyzer[A]    = queue.analyzer
-  def parser:   FastaParser[A] = analyzer.parser
+  import AnalyzerService._
+
+  def analyzer: Analyzer[A] = queue.analyzer
 
   def service(implicit ec: ExecutionContext): HttpService = HttpService {
     case GET -> Root / "queue"              ⇒ queueSize
@@ -39,7 +45,9 @@ final class AnalyzerService[A] private (val queue: AnalyzerQueue[A]) {
     case GET -> Root / UUID(uuid)        ⇒ analysisData(uuid)
     case GET -> Root / UUID(uuid) / file ⇒ analysisFile(uuid, file)
 
-    case POST -> Root ⇒ ???
+    case req @ POST -> Root ⇒ req.decode[AnalysisWrapper[A]] {
+      a ⇒ createAnalysis(a)
+    }
   }
 
   def queueSize: Process[Task, Response] = {
@@ -55,6 +63,11 @@ final class AnalyzerService[A] private (val queue: AnalyzerQueue[A]) {
 
     queue.position(uuid).cata(pos ⇒ ok(content(pos)), notFound)
   }
+
+  def createAnalysis(aw: AnalysisWrapper[A]): Process[Task, Response] =
+    queue.push(aw.reference, aw.comparing, aw.threshold, aw.annotations) flatMap {
+      analysis ⇒ ok(analysis.asJson)
+    }
 
   def analysisData(uuid: java.util.UUID): Process[Task, Response] = {
     lazy val directory: java.nio.file.Path =
@@ -73,18 +86,35 @@ final class AnalyzerService[A] private (val queue: AnalyzerQueue[A]) {
     lazy val readAnalysis: Process[Task, Analysis] =
       AnalysisParser.fromFileW(directory / "analysis.data")
 
-    directory.exists.flatMap(_ ? readAnalysis.flatMap( a ⇒ analysisFile(a, file)) | notFound)
+    directory.exists.flatMap(_ ? readAnalysis.flatMap(analysisFile(_, file)) | notFound)
   }
 
+  // FIXME: performs effect and wraps result in Process, this is wrong
   private def analysisFile(analysis: Analysis, file: String): Process[Task, Response] =
-    StaticFile.fromFile((analysis.directory / file).toFile, none[Request])
-              .fold(notFound)(AsyncP(_))
+    StaticFile.fromFile((analysis.directory / file).toFile, none[Request]).fold(notFound)(AsyncP(_))
 
 }
 
 object AnalyzerService {
 
-  def apply[A](queue: AnalyzerQueue[A])(implicit ec: ExecutionContext): HttpService =
+  final case class AnalysisWrapper[A](
+    reference:   Fasta[A],
+    comparing:   Fasta[A],
+    threshold:   Double,
+    annotations: Analysis.Annotations
+  )
+
+  object AnalysisWrapper {
+
+    implicit def WrapperDecode[A](implicit p: Parser[A], ev: A ⇒ Compound): DecodeJson[AnalysisWrapper[A]] =
+      jdecode4L(AnalysisWrapper.apply[A])("reference", "comparing", "threshold", "annotations")
+
+    implicit def WrapperEntityDecoder[A](implicit p: Parser[A], ev: A ⇒ Compound): EntityDecoder[AnalysisWrapper[A]] =
+      jsonOf[AnalysisWrapper[A]]
+
+  }
+
+  def apply[A](queue: AnalyzerQueue[A])(implicit p: Parser[A], ev: A ⇒ Compound, ec: ExecutionContext): HttpService =
     new AnalyzerService(queue).service
 
 }

@@ -28,6 +28,7 @@ final class DatasetService private {
 
   }
 
+  // FIXME: performs effect and wraps result in Process, this is wrong
   def resource(file: String, req: Request): Task[Response] =
     StaticFile.fromResource(file, req.some).fold(notFound)(AsyncP(_))
 
