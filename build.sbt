@@ -31,14 +31,14 @@ lazy val core = module("core").settings(
 )
 
 lazy val server = module("server").dependsOn(core).settings(
-  description := "HTTP server providing a REST API to access funpep",
+  description := "HTTP server providing a REST API over funpep core library",
 
   libraryDependencies ++= List(
-    "io.argonaut" %% "argonaut" % "6.0.4" exclude("org.scalaz", "scalaz-core_2.11"),
+    "io.argonaut" %% "argonaut" % "6.1",
 
-    "org.http4s"  %% "http4s-dsl"         % "0.8.4",
-    "org.http4s"  %% "http4s-argonaut"    % "0.8.4" exclude("io.argonaut", "argonaut_2.11"),
-    "org.http4s"  %% "http4s-blazeserver" % "0.8.4",
+    "org.http4s"  %% "http4s-dsl"          % "0.11.3",
+    "org.http4s"  %% "http4s-argonaut"     % "0.11.3",
+    "org.http4s"  %% "http4s-blaze-server" % "0.11.3",
 
     "me.lessis"     %% "courier" % "0.1.3",
     "oncue.journal" %% "core"    % "2.2.1"
@@ -92,16 +92,16 @@ lazy val metadata = List(
   organization := "es.uvigo.ei.sing",
   developers   := Developer("agjacome", "Alberto G. Jácome", "agjacome@esei.uvigo.es", url("https://github.com/agjacome")) :: Nil,
   startYear    := Option(2015),
-  homepage     := Some(url("http://sing.ei.uvigo.es/funpep")),
-  licenses     := List("MIT License" -> url("http://www.opensource.org/licenses/mit-license.html")),
-  scmInfo      := Some(ScmInfo(
+  homepage     := Option(url("http://sing.ei.uvigo.es/funpep")),
+  licenses     := "MIT License" -> url("http://www.opensource.org/licenses/mit-license.html") :: Nil,
+  scmInfo      := Option(ScmInfo(
     url("https://github.com/agjacome/funpep"),
     "scm:git:https://github.com/agjacome/funpep",
-    Some("scm:git:git@github.com/agjacome/funpep")
+    Option("scm:git:git@github.com/agjacome/funpep")
   ))
 )
 
 def module(name: String): Project =
   Project(s"funpep-$name", file(name)).settings(common, metadata)
 
-val javaVersion = TaskKey[String]("java-version", "Defines the target JVM version")
+def javaVersion = TaskKey[String]("java-version", "Defines the target JVM version")
