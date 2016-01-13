@@ -37,19 +37,6 @@ final class Analyzer[A] private (
       _ ← cmp.toFile(a.comparing)
     } yield a
 
-  def clear(analysis: Analysis): Process[Task, Analysis] = {
-    val clean = analysis.withStatus(Created(now))
-
-    clean.temporal.deleteRecursive  *>
-    clean.filtered.delete           *>
-    clean.alignment.delete          *>
-    clean.newick.delete             *>
-    clean.phyloXML.delete           *>
-    clean.treeImage.delete          *>
-    clean.csvReport.delete          *>
-    clean.toFile(analysis.metadata) >| clean
-  }
-
   def analyze(analysis: Analysis): KleisliP[Path, Analysis] =
     for {
       ref ← parser.fromFileW(analysis.reference).liftKleisli
@@ -57,8 +44,8 @@ final class Analyzer[A] private (
       out ← analyze(analysis, ref, cmp)
     } yield out
 
-  def analyze(analysis: Analysis, ref: Fasta[A], cmp: Fasta[A]): KleisliP[Path, Analysis] =
-    for {
+  def analyze(analysis: Analysis, ref: Fasta[A], cmp: Fasta[A]): KleisliP[Path, Analysis] = {
+    val proc = for {
       in  ← start(analysis)
       _   ← split(ref, cmp, in.temporal)
       fil ← filter(ref, in)
@@ -67,6 +54,26 @@ final class Analyzer[A] private (
       _   ← report(ref, fil, in)
       out ← finish(in)
     } yield out
+
+    proc.mapK[Process[Task, ?], Analysis] {
+      _.onFailure(failed(analysis, _))
+    }
+  }
+
+  def failed(analysis: Analysis, err: Throwable): Process[Task, Analysis] =
+    clear(analysis.withStatus(Failed(now, err.toString)))
+
+  def clear(analysis: Analysis): Process[Task, Analysis] =
+    analysis.temporal.deleteRecursive  *>
+    analysis.filtered.delete           *>
+    analysis.alignment.delete          *>
+    analysis.newick.delete             *>
+    analysis.phyloXML.delete           *>
+    analysis.treeImage.delete          *>
+    analysis.csvReport.delete          *>
+    analysis.toFile(analysis.metadata) >| analysis
+
+
 
   private def start(analysis: Analysis): KleisliP[Path, Analysis] = {
     val started = analysis.withStatus(Started(now))
@@ -83,7 +90,7 @@ final class Analyzer[A] private (
     (failed.toFile(failed.metadata) *> failed.temporal.deleteRecursive >| failed).liftKleisli
   }
 
-  def split(reference: Fasta[A], comparing: Fasta[A], temporal: Path): KleisliP[Path, Unit] =
+  private def split(reference: Fasta[A], comparing: Fasta[A], temporal: Path): KleisliP[Path, Unit] =
     MergeSplitter(comparing, reference, temporal).reduceMap(_.wrapNel).void.liftKleisli
 
   private def filter(reference: Fasta[A], analysis: Analysis): KleisliP[Path, Fasta[A]] = {

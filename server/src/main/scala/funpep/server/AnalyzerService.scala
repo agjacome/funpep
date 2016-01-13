@@ -44,10 +44,7 @@ final class AnalyzerService[A] private (
 
     case GET -> Root / UUID(uuid)        ⇒ analysisData(uuid)
     case GET -> Root / UUID(uuid) / file ⇒ analysisFile(uuid, file)
-
-    case req @ POST -> Root ⇒ req.decode[AnalysisWrapper[A]] {
-      a ⇒ createAnalysis(a)
-    }
+    case req @ POST -> Root ⇒ req.decode[AnalysisWrapper[A]](createAnalysis)
   }
 
   def queueSize: Process[Task, Response] = {
@@ -90,8 +87,10 @@ final class AnalyzerService[A] private (
   }
 
   // FIXME: performs effect and wraps result in Process, this is wrong
-  private def analysisFile(analysis: Analysis, file: String): Process[Task, Response] =
-    StaticFile.fromFile((analysis.directory / file).toFile, none[Request]).fold(notFound)(AsyncP(_))
+  private def analysisFile(analysis: Analysis, file: String): Process[Task, Response] = {
+    val f = (analysis.directory / file).toFile
+    StaticFile.fromFile(f, none[Request]).fold(notFound)(AsyncP(_))
+  }
 
 }
 

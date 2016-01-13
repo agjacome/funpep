@@ -28,6 +28,9 @@ private[util] trait Functions {
   def badRequest[A: EntityEncoder](content: A): Process[Task, Response] =
     Process.eval(BadRequest(content))
 
+  def methodNotAllowed: Process[Task, Response] =
+    Process.eval(MethodNotAllowed())
+
   def serverError: Process[Task, Response] =
     Process.eval(InternalServerError())
 

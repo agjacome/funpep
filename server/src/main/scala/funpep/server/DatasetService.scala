@@ -3,6 +3,7 @@ package funpep.server
 import scala.concurrent.ExecutionContext
 
 import scalaz.concurrent._
+import scalaz.stream._
 import scalaz.syntax.std.option._
 
 import org.http4s._
@@ -17,26 +18,23 @@ import util.functions._
 final class DatasetService private {
 
   def service(implicit ec: ExecutionContext): HttpService = HttpService {
+    case req @ GET -> Root / "fasta" / "bioactive_curated"       ⇒ resource("/fasta/bioactive_curated_peps.faa" , req)
+    case req @ GET -> Root / "fasta" / "glycoside_hydrolases"    ⇒ resource("/fasta/glycoside_hydrolases.faa"   , req)
+    case req @ GET -> Root / "fasta" / "tetracycline_resistence" ⇒ resource("/fasta/tetracycline_resistance.faa", req)
 
-    case req @ GET -> Root / "bioactive_curated"       ⇒ resource("bioactive_curated_peps.faa" , req)
-    case req @ GET -> Root / "glycoside_hydrolases"    ⇒ resource("glycoside_hydrolases.faa"   , req)
-    case req @ GET -> Root / "tetracycline_resistence" ⇒ resource("tetracycline_resistance.faa", req)
-
-    case req @ GET -> Root / "ontology" ⇒ resource("biomed_ontology.obo", req)
-
-    case _ ⇒ MethodNotAllowed()
-
+    case req @ GET -> Root / "ontology" / "biomed"  ⇒ resource("/obo/biomed_ontology.obo" , req)
+ // case req @ GET -> Root / "ontology" / "protein" ⇒ resource("/obo/protein_ontology.obo", req)
   }
 
   // FIXME: performs effect and wraps result in Process, this is wrong
-  def resource(file: String, req: Request): Task[Response] =
+  def resource(file: String, req: Request): Process[Task, Response] =
     StaticFile.fromResource(file, req.some).fold(notFound)(AsyncP(_))
 
 }
 
 object DatasetService {
 
-  def apply[A](implicit ec: ExecutionContext): HttpService =
+  def apply()(implicit ec: ExecutionContext): HttpService =
     new DatasetService().service
 
 }

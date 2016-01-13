@@ -27,6 +27,9 @@ final class PathOps private[util] (val self: Path) extends AnyVal {
   def create: Process[Task, Unit] =
     AsyncP(Files.createFile(self)).void
 
+  def createIfNotExists: Process[Task, Unit] =
+    AsyncP(if (!Files.exists(self)) Files.createFile(self)).void
+
   def createDir: Process[Task, Unit] =
     AsyncP(Files.createDirectories(self)).void
 

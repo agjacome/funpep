@@ -31,7 +31,7 @@ final case class Fasta[A] (
     def format(seq: Sequence[A]): String =
       ">" + seq.header + "\n" + seq.residues.mkString(_.code.toString).grouped(length).mkString("\n")
 
-    entries.map(format).mkString(identity, "\n")
+    entries.map(format).mkString(identity, "", "\n", "\n")
   }
 
   def toFile(path: Path): Process[Task, Unit] =

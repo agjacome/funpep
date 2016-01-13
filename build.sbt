@@ -42,7 +42,9 @@ lazy val server = module("server").dependsOn(core).settings(
 
     "me.lessis"     %% "courier" % "0.1.3",
     "oncue.journal" %% "core"    % "2.2.1"
-  )
+  ),
+
+  mainClass in assembly := Option("funpep.server.FunpepServer")
 )
 
 lazy val common = List(
@@ -84,6 +86,8 @@ lazy val common = List(
   scalacOptions in (Compile, console) ~= { _ filterNot Set(
     "-Xfatal-warnings", "-Ywarn-unused-import"
   )},
+
+  assemblyJarName in assembly := s"${name.value}.jar",
 
   shellPrompt := { _ ⇒ s"${name.value} » " }
 )

@@ -38,7 +38,11 @@ final class CSVReporter[A] private (
 
   def report(file: Path): KleisliP[Path, Unit] =
     reportLines.mapK[Process[Task, ?], Unit] {
-      _.prepend(csvHeader :: Nil).intersperse("\n").pipe(text.utf8Encode).to(nio.file.chunkW(file))
+      _.prepend(csvHeader :: Nil)
+       .intersperse("\n")
+       .append(Process("\n"))
+       .pipe(text.utf8Encode)
+       .to(nio.file.chunkW(file))
     }
 
   def reportLines: KleisliP[Path, String] =

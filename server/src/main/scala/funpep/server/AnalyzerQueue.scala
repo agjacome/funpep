@@ -20,7 +20,6 @@ import funpep.Analyzer
 import funpep.data._
 import funpep.util.functions._
 import funpep.util.types._
-import funpep.util.ops.foldable._
 import funpep.util.ops.path._
 
 
@@ -53,19 +52,24 @@ final class AnalyzerQueue[A] private (val analyzer: Analyzer[A], val queue: Path
 
   def pop: Process[Task, Analysis] =
     dequeue flatMap {
-      id ⇒ AnalysisParser.fromFileW(analyzer.database / id.toString / "analysis.metadata")
+      id ⇒ AnalysisParser.fromFileW(analyzer.database / id.toString / "analysis.data")
     }
 
   private def enqueue(id: UUID): Process[Task, Unit] =
-    AsyncP(q.put(id)) <* write
+    AsyncP(q.put(id)).flatMap(_ ⇒ write) // FIXME: applicative does not seem to work correctly
 
   private def dequeue: Process[Task, UUID] =
-    AsyncP(q.take()) <* write
+    AsyncP(q.take()).flatMap(write >| _) // FIXME: applicative does not seem to work correctly
+
+  private def read: Process[Task, Unit] =
+    queue.createIfNotExists.flatMap(_ ⇒ linesR(queue)).map(_.map {
+      id ⇒ q.put(UUID.fromString(id))
+    }).void
 
   private def write: Process[Task, Unit] = {
-    val lines = q.asScala.toList.map(_.toString)
+    val lines = q.asScala.toList.mkString("\n")
 
-    lines.toProcess.intersperse("\n").pipe(text.utf8Encode).to(
+    Process(lines).pipe(text.utf8Encode).to(
       nio.file.chunkW(queue.openAsyncChannel(WRITE, CREATE, TRUNCATE_EXISTING))
     )
   }
@@ -74,10 +78,12 @@ final class AnalyzerQueue[A] private (val analyzer: Analyzer[A], val queue: Path
 
 object AnalyzerQueue {
 
-  def apply[A](analyzer: Analyzer[A], queue: Path): AnalyzerQueue[A] =
-    new AnalyzerQueue(analyzer, queue)
+  def apply[A](analyzer: Analyzer[A], queue: Path): Process[Task, AnalyzerQueue[A]] = {
+    val analyzerQueue = new AnalyzerQueue(analyzer, queue)
+    analyzerQueue.read >| analyzerQueue
+  }
 
-  def apply[A](analyzer: Analyzer[A]): AnalyzerQueue[A] =
+  def apply[A](analyzer: Analyzer[A]): Process[Task, AnalyzerQueue[A]] =
     apply(analyzer, analyzer.database / "pending-analysis.queue")
 
 }
