@@ -2,6 +2,7 @@ package funpep.server
 
 import scala.concurrent.ExecutionContext.Implicits._
 
+import scalaz._
 import scalaz.concurrent._
 import scalaz.stream._
 import scalaz.syntax.functor._
@@ -9,42 +10,57 @@ import scalaz.syntax.functor._
 import org.http4s.server._
 import org.http4s.server.blaze._
 
+import net.bmjames.opts.{ execParser, info }
+
 import funpep._
 import funpep.data._
-import funpep.util.all._
+import funpep.util.functions._
+import funpep.util.types._
+import funpep.util.ops.foldable._
 
+import service._
 
 object FunpepServer {
 
-  // TODO: get threads as optional main argument, default to processors
-  implicit lazy val strategy = fixedPoolStrategy(processors)
+  def main(args: Array[String]): Unit =
+    parseArgs(args).fold(showErrors, runFunpep).run.run
 
-  // TODO: hardcoded values, receive as required main arguments and validate
-  lazy val httpPort = 65480
-  lazy val httpPath = "/funpep"
-  lazy val clustalo = "/usr/bin/clustalo".toPath
-  lazy val database = "/home/agjacome/funpep/database".toPath
+  def showErrors(errors: NonEmptyList[ErrorMsg]): Process[Task, Unit] =
+    AsyncP {
+      val errStr = errors.mkString(identity, "\n")
+      System.err.println(errStr)
+    }
 
-  def router(queue: AnalyzerQueue[AminoAcid]): HttpService =
-    Router(
-      "/analysis" → AnalyzerService[AminoAcid](queue),
-      "/dataset"  → DatasetService()
-    )
+  // using mapK and flatMap in here is even uglier than this ".apply" stuff
+  def runFunpep(options: Options): Process[Task, Unit] =
+    analyzerQueue.apply(options) flatMap { queue ⇒
+      val server   = runServer(queue).apply(options)
+      val analyzer = runAnalyzer(queue).apply(options)
 
-  def runServer(queue: AnalyzerQueue[AminoAcid]): Process[Task, Unit] =
-    AsyncP { BlazeBuilder.bindHttp(httpPort).mountService(router(queue), httpPath).run.awaitShutdown }
+      server.merge(analyzer)
+    }
 
-  def runAnalyzer(queue: AnalyzerQueue[AminoAcid]): Process[Task, Unit] =
-    queue.analyzerLoop.apply(clustalo).void
+  private def parseArgs(args: Array[String]): ValidationNel[ErrorMsg, Options] =
+    execParser(args, "funpep-server", info(Options.options))
 
-  def main(args: Array[String]): Unit = {
-    val main = for {
-      _ ← database.createDir
-      q ← AnalyzerQueue(Analyzer[AminoAcid](database))
-      m ← runServer(q).merge(runAnalyzer(q))
-    } yield m
+  private def analyzerQueue: KleisliP[Options, AnalyzerQueue[AminoAcid]] =
+    KleisliP { options ⇒
+      implicit val strategy = fixedPoolStrategy(options.numThreads)
+      AnalyzerQueue(Analyzer[AminoAcid](options.database))
+    }
 
-    main.run.run
-  }
+  private def httpRouter(queue: AnalyzerQueue[AminoAcid]): HttpService =
+    RouterService.service(AnalyzerService(queue), DatasetService())
+
+  private def runServer(queue: AnalyzerQueue[AminoAcid]): KleisliP[Options, Unit] =
+    KleisliP { options ⇒
+      val router = httpRouter(queue)
+      val server = BlazeBuilder.bindHttp(options.httpPort).mountService(router, options.httpPath)
+
+      AsyncP(server.run.awaitShutdown)
+    }
+
+  private def runAnalyzer(queue: AnalyzerQueue[AminoAcid]): KleisliP[Options, Unit] =
+    KleisliP { options ⇒ queue.analyzerLoop.apply(options.clustalo).void }
 
 }
