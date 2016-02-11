@@ -3,6 +3,7 @@ package service
 
 import scala.concurrent.ExecutionContext
 
+import org.http4s._
 import org.http4s.server._
 
 

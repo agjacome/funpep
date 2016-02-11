@@ -9,7 +9,6 @@ import scalaz.syntax.std.option._
 
 import org.http4s._
 import org.http4s.dsl._
-import org.http4s.server._
 
 import funpep.util.functions._
 

@@ -8,8 +8,8 @@ lazy val core = module("core").settings(
   description := "Core funpep library",
 
   libraryDependencies ++= List(
-    "org.scalaz" %% "scalaz-core"       % "7.1.5",
-    "org.scalaz" %% "scalaz-concurrent" % "7.1.5",
+    "org.scalaz" %% "scalaz-core"       % "7.1.7",
+    "org.scalaz" %% "scalaz-concurrent" % "7.1.7",
 
     "org.scalaz.stream" %% "scalaz-stream" % "0.7.2a",
 
@@ -17,7 +17,7 @@ lazy val core = module("core").settings(
     "org.tpolecat" %% "atto-stream" % "0.4.2",
 
     "commons-io"             % "commons-io" % "2.4",
-    "org.biojava.thirdparty" % "forester"   % "1.005"
+    "org.biojava.thirdparty" % "forester"   % "1.038"
   )
 )
 
@@ -27,9 +27,9 @@ lazy val server = module("server").dependsOn(core).settings(
   libraryDependencies ++= List(
     "io.argonaut" %% "argonaut" % "6.1",
 
-    "org.http4s"  %% "http4s-dsl"          % "0.11.3",
-    "org.http4s"  %% "http4s-argonaut"     % "0.11.3",
-    "org.http4s"  %% "http4s-blaze-server" % "0.11.3",
+    "org.http4s"  %% "http4s-dsl"          % "0.12.1",
+    "org.http4s"  %% "http4s-argonaut"     % "0.12.1",
+    "org.http4s"  %% "http4s-blaze-server" % "0.12.1",
 
     "me.lessis"     %% "courier"                    % "0.1.3",
     "oncue.journal" %% "core"                       % "2.2.1",

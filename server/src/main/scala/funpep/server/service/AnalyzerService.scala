@@ -19,7 +19,6 @@ import argonaut.Argonaut._
 import org.http4s._
 import org.http4s.argonaut._
 import org.http4s.dsl._
-import org.http4s.server._
 
 import funpep._
 import funpep.data._

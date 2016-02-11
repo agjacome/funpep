@@ -7,7 +7,7 @@ import scalaz.concurrent._
 import scalaz.stream._
 import scalaz.syntax.functor._
 
-import org.http4s.server._
+import org.http4s._
 import org.http4s.server.blaze._
 
 import net.bmjames.opts.{ execParser, info }
