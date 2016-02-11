@@ -23,9 +23,7 @@ import util.ops.disjunction._
 import util.ops.foldable._
 
 
-final case class Fasta[A] (
-  val entries: NonEmptyList[Sequence[A]]
-)(implicit ev: A ⇒ Compound) {
+final case class Fasta[A] (val entries: NonEmptyList[Sequence[A]])(implicit ev: A ⇒ Compound) {
 
   def toString(length: Int): String = {
     def format(seq: Sequence[A]): String =
@@ -84,6 +82,7 @@ final class FastaParser[A] private[data] (val compound: Parser[A])(implicit ev: 
   def fromFile(path: Path): Process[Task, ErrorMsg ∨ Fasta[A]] =
     textR(path).map(fromString)
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
   def fromFileW(path: Path): Process[Task, Fasta[A]] =
     fromFile(path) flatMap {
       parsed ⇒ Process.eval(parsed.toTask(identity))

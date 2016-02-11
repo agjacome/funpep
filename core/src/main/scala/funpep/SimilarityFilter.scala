@@ -22,16 +22,18 @@ object SimilarityFilter {
     filterSimilarSequences(dir, thres, parser)
 
   // FIXME: ugly as shit
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
   def filterSimilarSequences[A](dir: Path, thres: Double, parser: FastaParser[A])(implicit st: Strategy): KleisliP[Path, Sequence[A]] =
     KleisliP { clustalΩ ⇒
-      val fastas = for {
+      val fastas: Process[Task, (Path, Fasta[A])] = for {
         file   ← dir.children("*.{fasta,fas,fna,faa,ffn,frna}")
         fasta  ← parser.fromFileW(file)
       } yield (file, fasta)
 
-      val filtered = fastas map { case (path, fasta) ⇒
-        val isSimilar = isFirstSimilarToRest(fasta, path, thres).apply(clustalΩ)
-        isSimilar.filter(identity) >| fasta.entries.head
+      val filtered: Process[Task, Process[Task, Sequence[A]]] = fastas map {
+        case (path, fasta) ⇒
+          val isSimilar = isFirstSimilarToRest(fasta, path, thres).apply(clustalΩ)
+          isSimilar.filter(identity) >| fasta.entries.head
       }
 
       mergeN(filtered)

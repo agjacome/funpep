@@ -63,10 +63,11 @@ final class AnalyzerService[A] private (
   }
 
   def createAnalysis(aw: AnalysisWrapper[A]): Process[Task, Response] =
-    queue.push(aw.reference, aw.comparing, aw.threshold, aw.annotations) flatMap {
+    queue.push(aw.reference, aw.comparing, aw.threshold, aw.annotations).flatMap[Task, Response] {
       analysis ⇒ ok(analysis.asJson)
     }
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
   def analysisData(uuid: java.util.UUID): Process[Task, Response] = {
     lazy val directory: java.nio.file.Path =
       analyzer.database / uuid.toString
@@ -74,9 +75,12 @@ final class AnalyzerService[A] private (
     lazy val readAnalysis: Process[Task, Json] =
       AnalysisParser.fromFileW(directory / "analysis.data").map(_.asJson)
 
-    directory.exists.flatMap(_ ? readAnalysis.flatMap(ok(_)) | notFound)
+    directory.exists.flatMap[Task, Response] {
+      _ ? readAnalysis.flatMap(ok(_)) | notFound
+    }
   }
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
   def analysisFile(uuid: java.util.UUID, file: String): Process[Task, Response] = {
     lazy val directory: java.nio.file.Path =
       analyzer.database / uuid.toString
@@ -84,7 +88,9 @@ final class AnalyzerService[A] private (
     lazy val readAnalysis: Process[Task, Analysis] =
       AnalysisParser.fromFileW(directory / "analysis.data")
 
-    directory.exists.flatMap(_ ? readAnalysis.flatMap(analysisFile(_, file)) | notFound)
+    directory.exists.flatMap[Task, Response] {
+      _ ? readAnalysis.flatMap(analysisFile(_, file)) | notFound
+    }
   }
 
   // FIXME: performs effect and wraps result in Process, this is wrong

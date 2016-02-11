@@ -39,6 +39,6 @@ private[util] trait Functions {
 
   // FIXME: This should be explicit
   implicit def RunLastOrServerError(p: Process[Task, Response]): Task[Response] =
-    p.runLastOr(Response(InternalServerError))
+    p.runLastOr[Task, Response](Response(InternalServerError))
 
 }

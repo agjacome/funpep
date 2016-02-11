@@ -28,6 +28,7 @@ final class Analyzer[A] private (
   import Analysis._
   import Analyzer._
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
   def create(ref: Fasta[A], cmp: Fasta[A], thres: Double, annots: Annotations): Process[Task, Analysis] =
     for {
       a ← AsyncP(Analysis(database, thres, annots))
@@ -44,6 +45,7 @@ final class Analyzer[A] private (
       out ← analyze(analysis, ref, cmp)
     } yield out
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
   def analyze(analysis: Analysis, ref: Fasta[A], cmp: Fasta[A]): KleisliP[Path, Analysis] = {
     val proc = for {
       in  ← start(analysis)

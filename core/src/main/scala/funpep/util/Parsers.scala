@@ -13,7 +13,7 @@ import atto.syntax.parser._
 private[util] trait Parsers {
 
   def eoi: Parser[Unit] = atto.parser.combinator.endOfInput
-  def eol: Parser[Unit] = (cr | lf | cr ~ lf) map { _ ⇒ () }
+  def eol: Parser[Unit] = (cr | lf).void | (cr ~ lf).void
   def cr:  Parser[Char] = char(0x0D)
   def lf:  Parser[Char] = char(0x0A)
 

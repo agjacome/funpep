@@ -11,10 +11,10 @@ import types._
 final class DisjunctionOps[A, B] private[util] (val self: A ∨ B) {
 
   def leftErr(implicit ev0: Show[A], ev1: A =!= Throwable): Throwable ∨ B =
-    self.leftMap(a ⇒ sys.error(a.shows))
+    self.leftMap(a ⇒ new RuntimeException(a.shows))
 
   def leftErr(msg: A ⇒ String)(implicit ev: A =!= Throwable): Throwable ∨ B =
-    self.leftMap(a ⇒ sys.error(msg(a)))
+    self.leftMap(a ⇒ new RuntimeException(msg(a)))
 
   def toTask[T <: Throwable](implicit ev0: Show[A], ev1: A =!= T): Task[B] =
     Task.fromDisjunction(leftErr)

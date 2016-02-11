@@ -1,6 +1,7 @@
 lazy val root = Project("funpep", file("."))
   .settings(common, metadata)
   .settings(description := "Functional enrichment of peptide data sets")
+  .enablePlugins(GitVersioning, GitBranchPrompt)
   .aggregate(core, server)
 
 lazy val core = module("core").settings(
@@ -17,17 +18,7 @@ lazy val core = module("core").settings(
 
     "commons-io"             % "commons-io" % "2.4",
     "org.biojava.thirdparty" % "forester"   % "1.005"
-  ),
-
-  initialCommands :=
-    """import scalaz._
-       import Scalaz._
-       import scalaz.stream._
-       import scalaz.concurrent.Task
-       import funpep._
-       import funpep.data._
-       import funpep.contrib._
-       import funpep.util.all._"""
+  )
 )
 
 lazy val server = module("server").dependsOn(core).settings(
@@ -50,10 +41,8 @@ lazy val server = module("server").dependsOn(core).settings(
 
 lazy val common = List(
 
-  version in ThisBuild := "0.1.0-SNAPSHOT",
-
-  scalaVersion in ThisBuild := "2.11.7",
-  javaVersion  in ThisBuild := "1.8",
+  scalaVersion := "2.11.7",
+  javaVersion  := "1.8",
 
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.7.1"),
 
@@ -84,13 +73,15 @@ lazy val common = List(
     "-Xlint:unchecked"
   ),
 
+  wartremoverWarnings ++= Warts.allBut(
+    Wart.Nothing,               // Because scalaz-stream loves Nothing
+    Wart.ExplicitImplicitTypes, // [wartremover#182](https://github.com/puffnfresh/wartremover/issues/182)
+    Wart.Throw                  // [wartremover#188](https://github.com/puffnfresh/wartremover/issues/188)
+  ),
+
   scalacOptions in (Compile, console) ~= { _ filterNot Set(
     "-Xfatal-warnings", "-Ywarn-unused-import"
-  )},
-
-  assemblyJarName in assembly := s"${name.value}.jar",
-
-  shellPrompt := { _ ⇒ s"${name.value} » " }
+  )}
 )
 
 lazy val metadata = List(
@@ -98,7 +89,7 @@ lazy val metadata = List(
   developers   := Developer("agjacome", "Alberto G. Jácome", "agjacome@esei.uvigo.es", url("https://github.com/agjacome")) :: Nil,
   startYear    := Option(2015),
   homepage     := Option(url("http://sing.ei.uvigo.es/funpep")),
-  licenses     := "MIT License" -> url("http://www.opensource.org/licenses/mit-license.html") :: Nil,
+  licenses     := "MIT" -> url("http://www.opensource.org/licenses/mit-license.html") :: Nil,
   scmInfo      := Option(ScmInfo(
     url("https://github.com/agjacome/funpep"),
     "scm:git:https://github.com/agjacome/funpep",

@@ -9,8 +9,14 @@ import scalaz.stream._
 private[util] trait Types {
 
   trait =!=[A, B]
+
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Null"))
   implicit def neq[A, B]: A =!= B = null
+
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Null"))
   implicit def neqAmbig0[A, B, C]: C =!= C = null
+
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Null"))
   implicit def neqAmbig1[A]: A =!= A = null
 
   type ErrorMsg = String

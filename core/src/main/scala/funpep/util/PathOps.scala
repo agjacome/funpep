@@ -24,14 +24,14 @@ final class PathOps private[util] (val self: Path) extends AnyVal {
   def exists: Process[Task, Boolean] =
     AsyncP(Files.exists(self))
 
-  def create: Process[Task, Unit] =
-    AsyncP(Files.createFile(self)).void
+  def create: Process[Task, Path] =
+    AsyncP(Files.createFile(self))
 
-  def createIfNotExists: Process[Task, Unit] =
-    AsyncP(if (!Files.exists(self)) Files.createFile(self)).void
+  def createIfNotExists: Process[Task, Path] =
+    AsyncP(if (Files.exists(self)) self else Files.createFile(self))
 
-  def createDir: Process[Task, Unit] =
-    AsyncP(Files.createDirectories(self)).void
+  def createDir: Process[Task, Path] =
+    AsyncP(Files.createDirectories(self))
 
   def delete: Process[Task, Unit] =
     AsyncP(Files.deleteIfExists(self)).void
@@ -39,15 +39,13 @@ final class PathOps private[util] (val self: Path) extends AnyVal {
   def deleteRecursive: Process[Task, Unit] =
     AsyncP(FileUtils.deleteDirectory(self.toFile))
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Throw"))
   def children(glob: String): Process[Task, Path] = {
     import Cause.{ Terminated, End }
 
     io.resource(Task(Files.newDirectoryStream(self, glob)))(s ⇒ Task(s.close)) { s ⇒
       val iter = s.iterator
-      Task {
-        if (iter.hasNext) iter.next
-        else throw Terminated(End)
-      }
+      Task { if (iter.hasNext) iter.next else throw Terminated(End) }
     }
   }
 
@@ -61,6 +59,7 @@ final class PathOps private[util] (val self: Path) extends AnyVal {
   def |(sibling: Path):   Path = self.resolveSibling(sibling)
   def |(sibling: String): Path = self.resolveSibling(sibling)
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.ToString"))
   def +(extension: String): Path = Paths.get(self.toString + extension)
 
 }

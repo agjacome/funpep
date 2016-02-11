@@ -39,6 +39,7 @@ final class AnalyzerQueue[A] private (val analyzer: Analyzer[A], val queue: Path
   def position(uuid: UUID): Maybe[Int] =
     q.asScala.toList.toIList.indexOf(uuid)(Equal.equalA).toMaybe
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
   def push(
     reference:   Fasta[A],
     comparing:   Fasta[A],
@@ -51,20 +52,22 @@ final class AnalyzerQueue[A] private (val analyzer: Analyzer[A], val queue: Path
     } yield a
 
   def pop: Process[Task, Analysis] =
-    dequeue flatMap {
+    dequeue.flatMap[Task, Analysis] {
       id ⇒ AnalysisParser.fromFileW(analyzer.database / id.toString / "analysis.data")
     }
 
   private def enqueue(id: UUID): Process[Task, Unit] =
-    AsyncP(q.put(id)).flatMap(_ ⇒ write) // FIXME: applicative does not seem to work correctly
+    AsyncP(q.put(id)).flatMap[Task, Unit](_ ⇒ write)
 
   private def dequeue: Process[Task, UUID] =
-    AsyncP(q.take()).flatMap(write >| _) // FIXME: applicative does not seem to work correctly
+    AsyncP(q.take()).flatMap[Task, UUID](write >| _)
 
   private def read: Process[Task, Unit] =
-    queue.createIfNotExists.flatMap(_ ⇒ linesR(queue)).map(_.map {
-      id ⇒ q.put(UUID.fromString(id))
-    }).void
+    queue.createIfNotExists.flatMap[Task, Unit] {
+      linesR(_).map(_ map {
+        id ⇒ q.put(UUID.fromString(id))
+      }).void
+    }
 
   private def write: Process[Task, Unit] = {
     val lines = q.asScala.toList.mkString("\n")

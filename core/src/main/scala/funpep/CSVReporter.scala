@@ -36,6 +36,7 @@ final class CSVReporter[A] private (
   lazy val csvHeader     = """"Comparing ID","Reference ID","Similarity Percentage""""
   lazy val referenceSize = reference.entries.size
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
   def report(file: Path): KleisliP[Path, Unit] =
     reportLines.mapK[Process[Task, ?], Unit] {
       _.prepend(csvHeader :: Nil)
@@ -123,6 +124,7 @@ object CSVReporter {
     def fromFile(path: Path): Process[Task, ErrorMsg ∨ Matrix] =
       textR(path).map(fromString)
 
+    @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
     def fromFileW(path: Path): Process[Task, Matrix] =
       fromFile(path) flatMap {
         parsed ⇒ Process.eval(parsed.toTask(identity))

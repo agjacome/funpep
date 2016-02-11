@@ -79,13 +79,13 @@ object Analysis {
       case Failed(t, e) ⇒ s"failed - ${t.getEpochSecond} - $e"
     })
 
-    lazy val parser: Parser[Status] = {
+    def parser: Parser[Status] = {
       lazy val instant: Parser[Instant] = long.map(Instant.ofEpochSecond)
 
-      (string("created")  ~> sep('-') ~> instant).map(Created.apply)  |
-      (string("started")  ~> sep('-') ~> instant).map(Started.apply)  |
-      (string("finished") ~> sep('-') ~> instant).map(Finished.apply) |
-      (string("failed")   ~> sep('-') ~> instant ~ (sep('-') ~> takeLine)).map(Failed.tupled)
+      (string("created")  ~> sep('-') ~> instant).map[Status](Created.apply)  |
+      (string("started")  ~> sep('-') ~> instant).map[Status](Started.apply)  |
+      (string("finished") ~> sep('-') ~> instant).map[Status](Finished.apply) |
+      (string("failed")   ~> sep('-') ~> instant ~ (sep('-') ~> takeLine)).map[Status](Failed.tupled)
     }
 
   }
@@ -133,6 +133,7 @@ object AnalysisParser {
   def fromFile(path: Path): Process[Task, ErrorMsg ∨ Analysis] =
     textR(path).map(fromString)
 
+  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
   def fromFileW(path: Path): Process[Task, Analysis] =
     fromFile(path) flatMap {
       parsed ⇒ Process.eval(parsed.toTask(identity))

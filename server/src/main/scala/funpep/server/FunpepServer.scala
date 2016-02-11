@@ -22,8 +22,9 @@ import service._
 
 object FunpepServer {
 
-  def main(args: Array[String]): Unit =
-    parseArgs(args).fold(showErrors, runFunpep).run.run
+  def main(args: Array[String]): Unit = {
+    parseArgs(args).fold(showErrors, runFunpep).run[Task].run
+  }
 
   def showErrors(errors: NonEmptyList[ErrorMsg]): Process[Task, Unit] =
     AsyncP {
@@ -33,7 +34,7 @@ object FunpepServer {
 
   // using mapK and flatMap in here is even uglier than this ".apply" stuff
   def runFunpep(options: Options): Process[Task, Unit] =
-    analyzerQueue.apply(options) flatMap { queue ⇒
+    analyzerQueue.apply(options).flatMap[Task, Unit] { queue ⇒
       val server   = runServer(queue).apply(options)
       val analyzer = runAnalyzer(queue).apply(options)
 
