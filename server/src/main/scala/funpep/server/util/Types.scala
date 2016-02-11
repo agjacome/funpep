@@ -3,6 +3,6 @@ package util
 
 private[util] trait Types {
 
-  type Email = javax.mail.internet.InternetAddress
+  // type Email = javax.mail.internet.InternetAddress
 
 }
