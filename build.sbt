@@ -84,11 +84,16 @@ lazy val common = List(
 
 lazy val metadata = List(
   organization := "es.uvigo.ei.sing",
-  developers   := Developer("agjacome", "Alberto G. Jácome", "agjacome@esei.uvigo.es", url("https://github.com/agjacome")) :: Nil,
-  startYear    := Option(2015),
-  homepage     := Option(url("http://sing.ei.uvigo.es/funpep")),
-  licenses     := "MIT" -> url("http://www.opensource.org/licenses/mit-license.html") :: Nil,
-  scmInfo      := Option(ScmInfo(
+  developers   := List(
+    Developer("agjacome", "Alberto G. Jácome", "agjacome@esei.uvigo.es", url("https://github.com/agjacome")),
+    Developer("abmiguez", "Aitor Blanco Míguez", "abmiguez@esei.uvigo.es", url("https://github.com/abmiguez"))
+  ),
+
+  startYear := Option(2015),
+  licenses  := "MIT" -> url("https://raw.githubusercontent.com/agjacome/funpep/master/LICENSE") :: Nil,
+  homepage  := Option(url("http://sing.ei.uvigo.es/funpep")),
+
+  scmInfo := Option(ScmInfo(
     url("https://github.com/agjacome/funpep"),
     "scm:git:https://github.com/agjacome/funpep",
     Option("scm:git:git@github.com/agjacome/funpep")
