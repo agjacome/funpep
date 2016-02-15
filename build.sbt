@@ -2,7 +2,7 @@ lazy val root = Project("funpep", file("."))
   .settings(common, metadata)
   .settings(description := "Functional enrichment of peptide data sets")
   .enablePlugins(GitVersioning, GitBranchPrompt)
-  .aggregate(core, server)
+  .aggregate(core, server, java)
 
 lazy val core = module("core").settings(
   description := "Core funpep library",
@@ -36,6 +36,10 @@ lazy val server = module("server").dependsOn(core).settings(
 
   mainClass in assembly := Option("funpep.server.FunpepServer")
 )
+
+lazy val java = module("java").dependsOn(core).settings(
+  description := "Plain Java adapter of funpep core library"
+);
 
 lazy val common = List(
 
