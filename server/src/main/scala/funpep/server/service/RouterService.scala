@@ -12,6 +12,9 @@ final class RouterService private (
   val datasetsService: DatasetService
 ) {
 
+  def service(middleware: HttpService ⇒ HttpService)(implicit ec: ExecutionContext): HttpService =
+    middleware(service)
+
   def service(implicit ec: ExecutionContext): HttpService =
     Router(
       "/analysis" → analyzerService.service,
@@ -33,5 +36,12 @@ object RouterService {
     datasets: DatasetService
   )(implicit ec: ExecutionContext): HttpService =
     new RouterService(analyzer, datasets).service
+
+  def service(
+    middleware: HttpService ⇒ HttpService,
+    analyzer:   AnalyzerService[_],
+    datasets:   DatasetService
+  )(implicit ec: ExecutionContext): HttpService =
+    new RouterService(analyzer, datasets).service(middleware)
 
 }

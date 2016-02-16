@@ -8,6 +8,7 @@ import scalaz.stream._
 import scalaz.syntax.functor._
 
 import org.http4s._
+import org.http4s.server.middleware._
 import org.http4s.server.blaze._
 
 import net.bmjames.opts.{ execParser, info }
@@ -51,7 +52,11 @@ object FunpepServer {
     }
 
   private def httpRouter(queue: AnalyzerQueue[AminoAcid]): HttpService =
-    RouterService.service(AnalyzerService(queue), DatasetService())
+    RouterService.service(
+      s ⇒ CORS(AutoSlash(s)),
+      AnalyzerService(queue),
+      DatasetService()
+    )
 
   private def runServer(queue: AnalyzerQueue[AminoAcid]): KleisliP[Options, Unit] =
     KleisliP { options ⇒
