@@ -1,26 +1,133 @@
+// TODO: split to file per component and clean up
 @import '~bootstrap/less/bootstrap';
 @import url('https://fonts.googleapis.com/css?family=Architects+Daughter|Cabin+Condensed:700,400');
 
-@body-bg:    #c0392b;
-@text-color: #ffffff;
-
-@border-radius-base: 0;
-
-.tmpIndex {
-  width: 100%;
-  margin: 0 auto;
+.box-shadow(@x: 0; @y: 0; @blur: 1px; @spread: 0; @color: rgba(0, 0, 0, 0.75)) {
+  box-shadow:         @arguments;
+  -moz-box-shadow:    @arguments;
+  -webkit-box-shadow: @arguments;
 }
 
-h1 {
-  text-align: center;
-  font: bold 200px 'Cabin Condensed';
-  letter-spacing: -5px;
-  display: block;
-  text-shadow: #222 5px 5px 0;
-  margin: 7.5% auto 3%;
+@primary:    #c0392b;
+@secondary:  #333333;
+@main-bg:    #dddddd; // #ecf0f1;
+@main-fg:    #222222;
+@alter-bg:   #333333;
+@alter-fg:   #ffffff;
+@content-bg: #ffffff;
+@content-fg: #222222;
+
+@heading-font: 'Cabin Condensed';
+@subhead-font: 'Architects Daughter';
+
+@body-bg:       @main-bg;
+@text-color:    @main-fg;
+@brand-primary: @primary;
+@brand-info:    @secondary;
+
+@border-radius-base:  0;
+@border-radius-large: 0;
+@border-radius-small: 0;
+
+@navbar-height:        50px;
+@navbar-margin-bottom: 40px;
+
+@navbar-default-color:               @alter-fg;
+@navbar-default-link-color:          @navbar-default-color;
+@navbar-default-link-hover-color:    @navbar-default-color;
+@navbar-default-link-active-color:   @navbar-default-color;
+@navbar-default-brand-color:         @navbar-default-color;
+@navbar-default-brand-hover-color:   @navbar-default-color;
+@navbar-default-toggle-border-color: @navbar-default-color;
+
+@navbar-default-bg:                  @primary;
+@navbar-default-link-hover-bg:       @navbar-default-link-active-bg;
+@navbar-default-toggle-hover-bg:     @navbar-default-link-active-bg;
+@navbar-default-toggle-icon-bar-bg:  @navbar-default-color;
+
+.navbar {
+  .box-shadow(0px; 1px; 9px; 3px);
 }
 
-p {
-  text-align: center;
-  font: 23px 'Architects Daughter';
+.logo {
+  font-size:   2.5em;
+  font-weight: 700;
+  font-family: @heading-font;
+  text-shadow: #000 3px 3px 0;
 }
+
+.container {
+  min-width: 600px !important;
+}
+
+.home-content {
+  .box-shadow(5px; 5px; 9px);
+
+  color:      @alter-fg;
+  border:     @alter-fg 3px ridge;
+  background: @primary;
+  padding:    20px;
+
+  h2 {
+    text-align:     center;
+    font-size:      10em;
+    font-weight:    700;
+    font-family:    @heading-font;
+    letter-spacing: -5px;
+    text-shadow:    #000 5px 5px 0;
+    margin-bottom:  30px;
+  }
+
+  h3 {
+    text-align:  center;
+    font-size:   1.5em;
+    font-family: @subhead-font;
+    margin-bottom:  20px;
+  }
+
+  p {
+    padding: 0 30px;
+    text-align: justify;
+    a, a:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .buttons {
+    width: 300px;
+    text-align: center;
+    margin: 30px auto 0;
+  }
+}
+
+.content {
+  .box-shadow(5px; 5px; 9px);
+
+  padding:    15px 30px;
+  color:      @content-fg;
+  background: @content-bg;
+
+  h3 {
+    font-size:   2.5em;
+    font-weight: 700;
+    font-family: @heading-font;
+  }
+
+  p {
+    text-align: justify;
+    a, a:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .loader {
+    display: block;
+    height:  75px;
+  }
+
+  .buttons {
+    text-align: center;
+    margin: 10px auto 0;
+  }
+}
+

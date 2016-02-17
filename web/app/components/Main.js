@@ -1,10 +1,13 @@
 import React  from 'react';
 
-const Main = () => {
+import Header  from './Header';
+import Content from './Content';
+
+const Main = ({children}) => {
   return (
-    <div classNam="tmpIndex">
-      <h1>funpep</h1>
-      <p>Functional enrichment of peptide datasets</p>
+    <div>
+      <Header />
+      <Content>{children}</Content>
     </div>
   );
 }
