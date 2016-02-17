@@ -31,7 +31,9 @@ lazy val server = module("server").dependsOn(core).settings(
     "org.http4s"  %% "http4s-argonaut"     % "0.12.1",
     "org.http4s"  %% "http4s-blaze-server" % "0.12.1",
 
-    "net.bmjames" %% "scala-optparse-applicative" % "0.3"
+    "net.bmjames" %% "scala-optparse-applicative" % "0.3",
+
+    "oncue.journal" %% "core" % "2.2.1"
   ),
 
   mainClass in assembly := Option("funpep.server.FunpepServer")
