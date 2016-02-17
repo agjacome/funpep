@@ -24,6 +24,8 @@ lazy val core = module("core").settings(
 lazy val server = module("server").dependsOn(core).settings(
   description := "HTTP server providing a REST API over funpep core library",
 
+  resolvers += "oncue bintray" at "http://dl.bintray.com/oncue/releases",
+
   libraryDependencies ++= List(
     "io.argonaut" %% "argonaut" % "6.1",
 
