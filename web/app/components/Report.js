@@ -25,8 +25,7 @@ const ShowStatus = ({uuid, status, report, tree}) => {
   return (
     <div>
       <h3>Reports for analysis '{uuid}'</h3>
-      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vehicula
-         velit id diam sagittis dignissim.</p>
+      <p>Here are all the files related to this analysis. Both the incoming FASTA files and the alignment file are available for download, as well as the phylogenetic tree generated during this same alignment (available in Newick and PhyloXML format). Finally the report with the sequences that have exceeded the threshold is shown and also available for download in CSV format.</p>
       <ListGroup>
         <ListGroupItem>Date: { moment.unix(status.time).toString() }</ListGroupItem>
       </ListGroup>

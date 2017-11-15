@@ -9,17 +9,7 @@ const Home = () => {
       <h2>funpep</h2>
       <h3>Functional enrichment of peptide datasets, version 0.1.0-<strong>alpha</strong></h3>
       <p>
-         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vehicula
-         velit id diam sagittis dignissim. Duis dictum feugiat turpis fermentum
-         hendrerit. Pellentesque ullamcorper iaculis est id finibus. In sit
-         amet lacinia lacus, at scelerisque augue. Duis rhoncus eu ex id
-         condimentum. Maecenas a neque rutrum, convallis odio id, pretium dui.
-         Sed eu lorem quis tortor tincidunt tincidunt. Etiam vel nisl rutrum,
-         molestie leo a, fringilla lectus. Praesent cursus euismod metus ut
-         suscipit. Pellentesque at semper libero. Praesent lacinia laoreet
-         velit, eget placerat eros efficitur sed. Nam lobortis eleifend
-         egestas. Nulla efficitur, ligula eget fringilla convallis, velit diam
-         ultricies ipsum, eget tempor purus mauris eu lectus.
+         The purpose of FunPep is to automatically arrange and enrich sets of amino acid sequences. In order to do that, the process always starts with two peptide data sets: a reference one and another to be enriched and functionally annotated. Next, a similarity filter is performed by computing the distance between each sequence alignment of both sets. In that way, those peptides that do not exceed a previously established threshold are deleted and a report is generated detailing the similarity percentage achieved between those that do have passed the threshold. Moreover, a phylogenetic tree is also generated with those peptides and the reference set, displaying in a visual manner the relationships between the reference sequences and the resulting ones. FunPep also integrates an biomedical ontology based peptide annotator, adding the possibility of manually annotate the reference set and, with those annotations, obtaining a filtered set automatically annotated by using their similarity level with those first ones.
       </p>
       <div className="buttons">
         <ButtonToolbar>
