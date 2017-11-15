@@ -1,16 +1,16 @@
 package funpep
 
-import java.nio.file.Path
+import java.nio.file.{Path, Paths}
 import java.time.Instant.now
+import java.nio.file.{Paths, Files}
 
-import scalaz.concurrent.{ Strategy, Task }
+import scalaz.concurrent.{Strategy, Task}
 import scalaz.stream._
 import scalaz.syntax.applicative._
 import scalaz.syntax.kleisli._
 import scalaz.syntax.nel._
-
+import com.typesafe.scalalogging._
 import atto._
-
 import contrib._
 import data._
 import util.functions._
@@ -18,15 +18,18 @@ import util.types._
 import util.ops.path._
 
 
+
 // TODO: handle failures; logging through Writer of NonEmptyList[String],
 // provide a scalaz-stream Sink as argument and just log to it ???
-final class Analyzer[A] private (
+final class Analyzer[A]  private (
   val database: Path,
   val parser:   FastaParser[A]
 )(implicit ev: A ⇒ Compound, st: Strategy) {
 
   import Analysis._
   import Analyzer._
+
+
 
   @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
   def create(ref: Fasta[A], cmp: Fasta[A], thres: Double, annots: Annotations): Process[Task, Analysis] =
@@ -38,32 +41,41 @@ final class Analyzer[A] private (
       _ ← cmp.toFile(a.comparing)
     } yield a
 
-  def analyze(analysis: Analysis): KleisliP[Path, Analysis] =
+  def analyze(analysis: Analysis): KleisliP[Path, Analysis] = {
     for {
       ref ← parser.fromFileW(analysis.reference).liftKleisli
       cmp ← parser.fromFileW(analysis.comparing).liftKleisli
       out ← analyze(analysis, ref, cmp)
     } yield out
+  }
 
   @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
   def analyze(analysis: Analysis, ref: Fasta[A], cmp: Fasta[A]): KleisliP[Path, Analysis] = {
     val proc = for {
-      in  ← start(analysis)
-      _   ← split(ref, cmp, in.temporal)
+      in ← start(analysis)
+      _ ← split(ref, cmp, in.temporal)
       fil ← filter(ref, in)
-      _   ← fil.toFile(in.filtered).liftKleisli
-      _   ← align(in)
-      _   ← report(ref, fil, in)
+      _ ← fil.toFile(in.filtered).liftKleisli
+      _ ← align(in)
+      _ ← report(ref, fil, in)
       out ← finish(in)
     } yield out
 
     proc.mapK[Process[Task, ?], Analysis] {
-      _.onFailure(failed(analysis, _))
+      _.onFailure(failed(analysis, _)).onComplete(isReallyCompleted(analysis))
     }
   }
 
-  def failed(analysis: Analysis, err: Throwable): Process[Task, Analysis] =
+  def failed(analysis: Analysis, err: Throwable): Process[Task, Analysis] = {
     clear(analysis.withStatus(Failed(now, err.toString)))
+  }
+
+  def isReallyCompleted(analysis: Analysis): Process[Task, Analysis] = {
+    if(!Files.exists(analysis.filtered))
+      clear(analysis.withStatus(Failed(now, "Selected threshold value is too high.")))
+    else
+      analysis.withStatus(Finished(now)).toFile(analysis.metadata) >| analysis
+  }
 
   def clear(analysis: Analysis): Process[Task, Analysis] =
     analysis.temporal.deleteRecursive  *>
@@ -74,8 +86,6 @@ final class Analyzer[A] private (
     analysis.treeImage.delete          *>
     analysis.csvReport.delete          *>
     analysis.toFile(analysis.metadata) >| analysis
-
-
 
   private def start(analysis: Analysis): KleisliP[Path, Analysis] = {
     val started = analysis.withStatus(Started(now))
@@ -92,16 +102,17 @@ final class Analyzer[A] private (
     (failed.toFile(failed.metadata) *> failed.temporal.deleteRecursive >| failed).liftKleisli
   }
 
-  private def split(reference: Fasta[A], comparing: Fasta[A], temporal: Path): KleisliP[Path, Unit] =
+  private def split(reference: Fasta[A], comparing: Fasta[A], temporal: Path): KleisliP[Path, Unit] ={
     MergeSplitter(comparing, reference, temporal).reduceMap(_.wrapNel).void.liftKleisli
+  }
 
   private def filter(reference: Fasta[A], analysis: Analysis): KleisliP[Path, Fasta[A]] = {
     val filterProc = SimilarityFilter(analysis.temporal, analysis.threshold, parser)
     filterProc.mapK[Process[Task, ?], Fasta[A]](_.reduceMap(seq ⇒ Fasta(seq)))
   }
 
-  private def align(analysis: Analysis): KleisliP[Path, Unit] =
-    Clustal.guideTree(analysis.filtered, analysis.alignment, analysis.newick)
+  private def align(analysis: Analysis): KleisliP[Path, Unit] = {
+    Clustal.guideTree(analysis.filtered, analysis.alignment, analysis.newick)}
 
   private def report(reference: Fasta[A], filtered: Fasta[A], analysis: Analysis): KleisliP[Path, Unit] = {
     CSVReporter.report(reference, filtered, analysis.csvReport) *>
@@ -128,4 +139,10 @@ object Analyzer {
   def apply[A](database: Path)(implicit parser: Parser[A], ev: A ⇒ Compound, st: Strategy): Analyzer[A] =
     new Analyzer(database, FastaParser[A])
 
+}
+object LogInside extends LazyLogging{
+  def log(x: String): Unit = {
+    val logger = Logger("name")
+    logger.info(x+"")
+  }
 }

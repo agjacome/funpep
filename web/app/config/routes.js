@@ -6,6 +6,7 @@ import Check  from '../components/Check';
 import Status from '../components/Status';
 import Help   from '../components/Help';
 import About  from '../components/About';
+import Report  from '../components/Report';
 
 import { Route, IndexRoute } from 'react-router';
 
@@ -17,7 +18,7 @@ export default (
 
     <Route path="/status"       component={Check} />
     <Route path="/status/:uuid" component={Status} />
-    <Route path="/report/:uuid" component={Home} />
+    <Route path="/report/:uuid" component={Report} />
 
     <Route path="/help"  component={Help} />
     <Route path="/about" component={About} />

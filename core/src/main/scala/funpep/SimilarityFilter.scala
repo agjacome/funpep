@@ -1,6 +1,7 @@
 package funpep
 
 import java.nio.file.Path
+import java.time.Instant.now
 
 import scalaz._
 import scalaz.concurrent._
@@ -9,14 +10,13 @@ import scalaz.stream.merge._
 import scalaz.std.list._
 import scalaz.syntax.applicative._
 import scalaz.syntax.std.string._
-
 import data._
 import contrib._
 import util.types._
 import util.ops.path._
 
 
-object SimilarityFilter {
+object  SimilarityFilter {
 
   def apply[A](dir: Path, thres: Double, parser: FastaParser[A])(implicit st: Strategy): KleisliP[Path, Sequence[A]] =
     filterSimilarSequences(dir, thres, parser)
@@ -39,10 +39,11 @@ object SimilarityFilter {
       mergeN(filtered)
     }
 
-  def isFirstSimilarToRest[A](fasta: Fasta[A], fastaFile: Path, thres: Double): KleisliP[Path, Boolean] =
-    Clustal.withDistanceMatrixOf(fastaFile) { matrix ⇒
+  def isFirstSimilarToRest[A](fasta: Fasta[A], fastaFile: Path, thres: Double): KleisliP[Path, Boolean] ={
+    Clustal.withDistanceMatrixOf(fastaFile) {
+      matrix ⇒
       similarOverThreshold(fasta.entries.head, thres, matrix) <* matrix.delete
-    }
+    }}
 
   // TODO: use atto, it will be nicer than raw string manipulation (maybe
   // slower, but who cares?; and also get rid of that nasty "+ 12")
@@ -50,12 +51,14 @@ object SimilarityFilter {
     import scalaz.syntax.traverse._
 
     def maxDistanceInLine(line: String): Maybe[Double] = {
-      val distances = line.drop(seq.header.length + 12).split("\\s+").toList
+      val distances = line.drop(seq.header.split(" ")(0).length).trim.substring(2).split("\\s+").toList
       distances.traverse(_.parseDouble.toMaybe).map(_.max)
     }
 
     val matrixLines = nio.file.linesR(matrix)
-    val maxDistance = matrixLines.find(_ startsWith seq.header).map(maxDistanceInLine)
+    val h = seq.header.split(" ")(0)
+
+    val maxDistance = matrixLines.find(_ startsWith h).map(maxDistanceInLine)
     maxDistance map { _ exists (_ >= thres) }
   }
 

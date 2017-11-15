@@ -40,7 +40,7 @@ class Check extends Base {
         <h3>Check analysis status</h3>
         <p>
           You can check the status of an ongoing analysis process by providing
-          its unique identifier in the form of an <a href="https://en.wikipedia.org/wiki/Universally_unique_identifier">UUID</a>.
+          its unique identifier in the form of an <a target="_blank" href="https://en.wikipedia.org/wiki/Universally_unique_identifier">UUID</a>.
           You should have received the Analysis ID upon correctly submitting it
           into our system.
         </p>

@@ -32,8 +32,7 @@ final case class Fasta[A] (val entries: NonEmptyList[Sequence[A]])(implicit ev: 
     entries.map(format).mkString(identity, "", "\n", "\n")
   }
 
-  def toFile(path: Path): Process[Task, Unit] =
-    Process(toString(70)).pipe(text.utf8Encode).to(nio.file.chunkW(path))
+  def toFile(path: Path): Process[Task, Unit] = Process(toString(70)).pipe(text.utf8Encode).to(nio.file.chunkW(path))
 
 }
 
@@ -83,10 +82,11 @@ final class FastaParser[A] private[data] (val compound: Parser[A])(implicit ev: 
     textR(path).map(fromString)
 
   @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
-  def fromFileW(path: Path): Process[Task, Fasta[A]] =
+  def fromFileW(path: Path): Process[Task, Fasta[A]] = {
     fromFile(path) flatMap {
       parsed ⇒ Process.eval(parsed.toTask(identity))
     }
+  }
 
 }
 

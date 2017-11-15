@@ -55,22 +55,18 @@ final class CSVReporter[A] private (
 
   def csvLines(matrix: Matrix): IList[String] = {
     import scalaz.syntax.traverse._
-
     lazy val matLines = matrix.filterWithKey(
       (k, _) ⇒ findSequence(filtered, k).isJust
     ).toList.toIList
-
     lazy val csvLines = matLines traverse {
       case (h, (i, d)) ⇒ csvLine(i, (h, d), matrix)
     }
-
     csvLines | IList.empty
   }
 
   def csvLine(lineIndex: Int, line: MatrixLine, matrix: Matrix): Maybe[String] = {
     lazy val lineHeader = line._1
     lazy val lineDists  = line._2.toIList.updated(lineIndex, -∞).take(referenceSize)
-
     for {
       maxValue ← lineDists.maximum.toMaybe
       maxIndex ← lineDists.indexOf(maxValue).toMaybe
@@ -83,8 +79,9 @@ final class CSVReporter[A] private (
   private def indexedMatrix(matrix: Matrix): Int ==>> (String, NonEmptyList[Double]) =
     ==>>.fromList(matrix.toList map { case (h, (i, d)) ⇒ (i, (h, d)) })
 
-  private def findSequence(fasta: Fasta[A], header: String): Maybe[Sequence[A]] =
-    fasta.entries.toIList.find(_.header startsWith header).toMaybe
+  private def findSequence(fasta: Fasta[A], header: String): Maybe[Sequence[A]] = {
+    fasta.entries.toIList.find(_.header.split(" ")(0) startsWith header.replaceAll("\n","")).toMaybe
+  }
 
   private def alignmentFasta: Process[Task, Path] = {
     val path = directory / "csv-distmat.fasta"
@@ -113,9 +110,10 @@ object CSVReporter {
     lazy val matrix: Parser[Matrix] = matrixHead ~> many1(matrixLine).map(linesToMatrix)
 
     lazy val matrixHead = takeLine.void
-    lazy val matrixLine = header ~ distances
+    lazy val matrixLine = (header <~ whitespaces) ~ distances
 
     lazy val header    = takeWhile(_ != ' ') <~ char(' ')
+    lazy val whitespaces = takeWhile(_ == ' ' ) <~ notChar(' ')
     lazy val distances = sepBy1(double, horizontalWhitespace) <~ (eol | eoi)
 
     def fromString(str: String): ErrorMsg ∨ Matrix =

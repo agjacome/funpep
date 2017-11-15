@@ -1,6 +1,7 @@
 import React  from 'react';
 import Loader from 'react-loader';
 import Base   from './Base';
+import Report from './Report';
 
 import { LinkContainer } from 'react-router-bootstrap';
 import { Alert, Button, ButtonToolbar, ListGroup, ListGroupItem } from 'react-bootstrap';
@@ -54,6 +55,9 @@ const ShowStatus = ({uuid, status, queue}) => {
             <LinkContainer to={'/report/' + uuid}><Button>View Reports</Button></LinkContainer>
           </div>
         }
+         
+         
+          
       </ListGroup>
     </div>
   );

@@ -17,14 +17,18 @@ lazy val core = module("core").settings(
     "org.tpolecat" %% "atto-stream" % "0.4.2",
 
     "commons-io"             % "commons-io" % "2.4",
-    "org.biojava.thirdparty" % "forester"   % "1.038"
+    "org.biojava.thirdparty" % "forester"   % "1.038",
+    "ch.qos.logback" % "logback-classic" % "1.2.3",
+    "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2"
   )
 )
 
 lazy val server = module("server").dependsOn(core).settings(
   description := "HTTP server providing a REST API over funpep core library",
-
-  resolvers += "oncue bintray" at "http://dl.bintray.com/oncue/releases",
+  resolvers ++= List(
+	"bmjames Bintray Repo" at "https://dl.bintray.com/bmjames/maven",
+  	"oncue bintray" at "http://dl.bintray.com/oncue/releases",
+	Resolver.bintrayRepo("bintray", "jcenter")),
 
   libraryDependencies ++= List(
     "io.argonaut" %% "argonaut" % "6.1",
@@ -35,7 +39,7 @@ lazy val server = module("server").dependsOn(core).settings(
 
     "net.bmjames" %% "scala-optparse-applicative" % "0.3",
 
-    "oncue.journal" %% "core" % "2.2.1"
+    "oncue.journal" % "core_2.11" % "2.2.1"
   ),
 
   mainClass in assembly := Option("funpep.server.FunpepServer")

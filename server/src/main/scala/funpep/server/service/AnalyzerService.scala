@@ -61,10 +61,10 @@ final class AnalyzerService[A] private (
     queue.position(uuid).cata(pos ⇒ ok(content(pos)), notFound)
   }
 
-  def createAnalysis(aw: AnalysisWrapper[A]): Process[Task, Response] =
+  def createAnalysis(aw: AnalysisWrapper[A]): Process[Task, Response] ={
     queue.push(aw.reference, aw.comparing, aw.threshold, aw.annotations).flatMap[Task, Response] {
       analysis ⇒ ok(analysis.asJson)
-    }
+    }}
 
   @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
   def analysisData(uuid: java.util.UUID): Process[Task, Response] = {
