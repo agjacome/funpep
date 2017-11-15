@@ -10,8 +10,18 @@ import { Alert, Button, ListGroup, ListGroupItem } from 'react-bootstrap';
 import S      from 'string';
 import moment from 'moment';
 import { status, file } from '../utils/api_helpers';
+import Phylocanvas from 'react-phylocanvas';
 
-const ShowStatus = ({uuid, status, report}) => {
+
+
+
+const PhyloTree = ({tree}) => {
+  return (
+    <Phylocanvas data={tree} treeType="rectangular"/>
+  );
+}
+
+const ShowStatus = ({uuid, status, report, tree}) => {
   return (
     <div>
       <h3>Reports for analysis '{uuid}'</h3>
@@ -32,28 +42,30 @@ const ShowStatus = ({uuid, status, report}) => {
           <DownloadButton uuid={uuid} name='alignment.fasta' span='Alignment.fasta' />    
         </div>
       </div><br/>
-      <b>Download tree files:</b>
+      <b>Phylogenetic tree:</b>
       <div className="row">
         <div className="col-lg-4">
-          <DownloadButton uuid={uuid} name='similar.newick' span='Newick format' />
+          <DownloadButton uuid={uuid} name='similar.newick' span='Download in Newick format' />
         </div>
         <div className="col-lg-8">
-          <DownloadButton uuid={uuid} name='similar.phylo.xml' span='PhyloXML format' />  
+          <DownloadButton uuid={uuid} name='similar.phylo.xml' span='Download in PhyloXML format' />  
         </div>
-      </div><br/>
+      </div>
+      <PhyloTree tree={tree}/> 
       <b>Analysis similarity report:</b>
       <div className="row">
         <div className="col-lg-12">
           <DownloadButton uuid={uuid} name='report.csv' span='Download as CSV' />
         </div>
       </div>
-      <br/>
-      <ReportTable products={report} />  
+      <br/> 
+      <ReportTable products={report} /><br/> 
       <div className="buttons">
          <LinkContainer to={'/status/' + uuid}><Button>Back</Button></LinkContainer>
       </div>
     </div>
-  );
+  )
+;
 }
 
 const ShowNotFound = ({uuid}) => {
@@ -74,14 +86,15 @@ class Report extends Base {
       found:  false,
       uuid:   '',
       report: '',
+      tree: '',
       status: {}
     }
 
     this.bindThis(
       'onStatusSuccess',
-      'onStatusFailure',
       'onReportSuccess',
-      'onReportFailure'
+      'onTreeSuccess',
+      'onAxiosFailure'
     );
   }
     
@@ -94,16 +107,7 @@ class Report extends Base {
     });
     file(response.data.uuid, 'report.csv')
       .then(this.onReportSuccess)
-      .catch(this.onReportFailure);
-  }
-
-  onStatusFailure(response) {
-    this.setState({
-      loaded: true,
-      found:  false,
-      uuid:   '',
-      status: {}
-    });
+      .catch(this.onAxiosFailure);
   }
     
   onReportSuccess(response) {
@@ -112,16 +116,32 @@ class Report extends Base {
       found:  true,
       uuid:   this.state.uuid,
       report: this.reportToTable(response.data),
+      tree:   '',
+      status: this.state.status
+    });
+    file(this.state.uuid, 'similar.newick')
+      .then(this.onTreeSuccess)
+      .catch(this.onAxiosFailure);
+  }
+    
+  onTreeSuccess(response) {
+    this.setState({
+      loaded: true,
+      found:  true,
+      uuid:   this.state.uuid,
+      report: this.state.report,
+      tree:   response.data,
       status: this.state.status
     });
   }
 
-  onReportFailure(response) {
+  onAxiosFailure(response) {
     this.setState({
       loaded: true,
       found:  false,
       uuid:   '',
-      report:  '',
+      report: '',
+      tree: '',
       status: {}
     });
   }
@@ -154,7 +174,7 @@ class Report extends Base {
       <div className="content">
         {
           this.state.found
-            ? <ShowStatus uuid={this.state.uuid} status={this.state.status} report={this.state.report}/>
+            ? <ShowStatus uuid={this.state.uuid} status={this.state.status} report={this.state.report} tree={this.state.tree}/>
             : <ShowNotFound uuid={this.props.params.uuid} />
           }
       </div>
