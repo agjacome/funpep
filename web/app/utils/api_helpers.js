@@ -25,4 +25,9 @@ function queuePosition(uuid) {
   return axios.get(`${api_url}/analysis/queue/${uuid}`);
 }
 
-export { status, image, file, queueSize, queuePosition };
+function sendAnalysis(json)
+{
+	return axios.post(`${api_url}/analysis/`, json);
+}
+
+export { status, image, file, queueSize, queuePosition, sendAnalysis };
