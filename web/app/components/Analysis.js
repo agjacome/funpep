@@ -92,63 +92,78 @@ class Analysis extends Base {
   }
 
 
-  createFirstFasta(files) {      
-    var arrayFastaFiles = [];
-    /// read fasta files
-    for(var i =0; i<files.fileList.length; i++)
-    {
-      //take file atributtes 
+  createFirstFasta(files) {
+    var arrayFastaFiles = [];  
+    try{
+      var arrayFastaFiles = [];
+      /// read fasta files
+      for(var i =0; i<files.fileList.length; i++)
+      {
+        //take file atributtes 
+        var name  = files.fileList[i].name;
+        var size = files.fileList[i].size;
+
+        // filter for size
+        if( size <= 3145728 )
+        {
+          
+          //take and format fasta sequence
+          var encodeFasta = files.base64[i].substring(13, files.base64[i].length);
+          var decodeFasta = base64.decode(encodeFasta);
+          var formatFasta = decodeFasta.replace(/(?:\r\n|\r|\n)/g, '\n');
+          var formatFasta = formatFasta.concat('\\n');
+          
+          //indentify format Fasta
+          var correctFormat = parseFasta(formatFasta);
+          
+
+          if ( correctFormat == true ){
+              status = 'Success';
+              arrayFastaFiles.push({
+                  'name': name,
+                  'size': size,
+                  'fasta': formatFasta,
+                  'status': status
+                });
+          }else{
+            this.setState({disabledButton: 'error'});
+            status = 'Error in format fasta';
+            arrayFastaFiles.push({
+                  'name': name,
+                  'size': size,
+                  'status': status
+                });
+          }
+          
+          this.setState({firstFastaFiles: arrayFastaFiles});
+          
+
+        }else{
+            status = 'The file size exceeds 3 MB ';
+            arrayFastaFiles.push({
+              'name': name,
+              'size': size,
+              'status': status
+            });
+            this.setState({firstFastaFiles: arrayFastaFiles});
+        
+        }// end of if/else filter size
+        
+        
+      }// end of loop for of files
+    }
+    catch(err){
+      
       var name  = files.fileList[i].name;
       var size = files.fileList[i].size;
-
-      // filter for size
-      if( size <= 3145728 )
-      {
-        
-        //take and format fasta sequence
-        var encodeFasta = files.base64[i].substring(13, files.base64[i].length);
-        var decodeFasta = base64.decode(encodeFasta);
-        var formatFasta = decodeFasta.replace(/(?:\r\n|\r|\n)/g, '\n');
-        var formatFasta = formatFasta.concat('\\n');
-        
-        //indentify format Fasta
-        var correctFormat = parseFasta(formatFasta);
-        
-
-        if ( correctFormat == true ){
-            status = 'Success';
-            arrayFastaFiles.push({
-                'name': name,
-                'size': size,
-                'fasta': formatFasta,
-                'status': status
-              });
-        }else{
-          this.setState({disabledButton: 'error'});
-          status = 'Error in format fasta';
-          arrayFastaFiles.push({
-                'name': name,
-                'size': size,
-                'status': status
-              });
-        }
-        
-        this.setState({firstFastaFiles: arrayFastaFiles});
-        
-
-      }else{
-          status = 'The file size exceeds 3 MB ';
-          arrayFastaFiles.push({
-            'name': name,
-            'size': size,
-            'status': status
-          });
-          this.setState({firstFastaFiles: arrayFastaFiles});
-      
-      }// end of if/else filter size
-      
-      
-    }// end of loop for of files    
+      var status = 'The file have a wrong extension';
+      arrayFastaFiles.push({
+              'name': name,
+              'size': size,
+              'status': status
+            });
+            this.setState({firstFastaFiles: arrayFastaFiles});
+    }    
     
   }
 
@@ -157,53 +172,64 @@ class Analysis extends Base {
     var name = files.fileList[0].name;
     var size = files.fileList[0].size;
     var status = '';
-    if( size <= 3145728 )
-    {
-         //take and format fasta sequence
-        var encodeFasta = files.base64.substring(13, files.base64.length);
-        var decodeFasta = base64.decode(encodeFasta);
-        var formatFasta = decodeFasta.replace(/(?:\r\n|\r|\n)/g, '\n');
-        var formatFasta =  formatFasta.concat('\n');
-        
-        //indentify format Fasta
-        var correctFormat = parseFasta(formatFasta);
-        if ( correctFormat == true)
-        {
-          status = 'Success';
-          var fasta = {
-            'name': name,
-            'size': size,
-            'fasta': formatFasta,
-            'status': status
+    try{
+      if( size <= 3145728 )
+      {
+           //take and format fasta sequence
+          var encodeFasta = files.base64.substring(13, files.base64.length);
+          var decodeFasta = base64.decode(encodeFasta);
+          var formatFasta = decodeFasta.replace(/(?:\r\n|\r|\n)/g, '\n');
+          var formatFasta =  formatFasta.concat('\n');
+          
+          //indentify format Fasta
+          var correctFormat = parseFasta(formatFasta);
+          if ( correctFormat == true)
+          {
+            status = 'Success';
+            var fasta = {
+              'name': name,
+              'size': size,
+              'fasta': formatFasta,
+              'status': status
+            }
+          }else{
+            this.setState({disabledButton: 'error'});
+            status = 'Error in format fasta';
+            var fasta = {
+              'name': name,
+              'size': size,
+              'status': status
+            }
           }
-        }else{
-          this.setState({disabledButton: 'error'});
-          status = 'Error in format fasta';
+
+
+          this.setState({secondFastaFile: fasta});
+
+      }else{
           var fasta = {
-            'name': name,
-            'size': size,
-            'status': status
+              'name': name,
+              'size': size,
+              'status': 'The file size exceeds 3 MB'
           }
-        }
-
-
-        this.setState({secondFastaFile: fasta});
-
-    }else{
-        var fasta = {
-            'name': name,
-            'size': size,
-            'status': 'The file size exceeds 3 MB'
-        }
-        this.setState({secondFastaFile: fasta});
-        
+          this.setState({secondFastaFile: fasta});
+      }
     }
+    catch(err){
+      this.setState({disabledButton: 'error'});
+      status = 'The file have a wrong extension';
+      var fasta = {
+              'name': name,
+              'size': size,
+              'status': status
+          }
+          this.setState({secondFastaFile: fasta});
+    }    
+
   
   }// end of create second fasta function
 
   submitForm(e){
     e.preventDefault();
-    console.log(this.state)
     var link = "https://sing-group.org/funpep/status/";
     var resultArray = [];
 
@@ -233,9 +259,7 @@ class Analysis extends Base {
           }
           resultArray.push(result);
           self.setState({results: resultArray});
-          console.log(resultArray);
 
-          //console.log(response.data);
       })
     
     }
