@@ -5,13 +5,14 @@ import base64 from 'base-64';
 import { sendAnalysis } from '../utils/api_helpers';
 //import fasta-parse from 'fasta-parse';
 import { Input, ButtonInput } from 'react-bootstrap';
+import Dropzone from 'react-dropzone';
 
 function ShowFirstFasta(fasta) {
   const array = (
     <ul id="fastaList">
-      {fasta.fasta.firstFastaFiles.map((fastaFile) =>
+      {fasta.fasta.acceptedFasta.map((fastaFile) =>
         <li  key={fastaFile.name} className={fastaFile.status}>
-          {fastaFile.status} : {fastaFile.name} - Size {fastaFile.size}
+            {fastaFile.status} : {fastaFile.name} - Size {fastaFile.size} 
         </li>
       )}
     </ul>
@@ -19,6 +20,8 @@ function ShowFirstFasta(fasta) {
   
   return (<div>{array}</div>);
 }
+
+
 /// function for show results
 function ShowResults(fasta) {
    
@@ -68,19 +71,24 @@ class Analysis extends Base {
       super(props);
 
       this.state = {
-        firstFastaFiles: [],
+        acceptedFasta: [],
+        rejectedFasta: [],
         secondFastaFile: {},
         threshold: '',
-        results:[],
-        disabledButton: ''
+        results:[]
       };
+
+      
 
 
       this.bindThis(
         'UpdateThreshold',
         'submitForm',
-        'createFirstFasta',
-        'createSecondFasta'
+        'dropFirstFasta',
+        'deleteElement',
+        'deleteRejectedElement',
+        'dropSecondFasta'
+
       );
   }
 
@@ -91,153 +99,232 @@ class Analysis extends Base {
 
   }
 
-
-  createFirstFasta(files) {
-    var arrayFastaFiles = [];  
-    try{
-      var arrayFastaFiles = [];
-      /// read fasta files
-      for(var i =0; i<files.fileList.length; i++)
+  deleteElement(key){
+    
+    var removed = [];
+    if ( this.state.acceptedFasta.length == 1)
+    {
+        this.setState({acceptedFasta: removed});
+    }else{
+      for ( var i = 0; i<this.state.acceptedFasta.length; i++)
       {
-        //take file atributtes 
-        var name  = files.fileList[i].name;
-        var size = files.fileList[i].size;
-
-        // filter for size
-        if( size <= 3145728 )
+        if ( this.state.acceptedFasta[i].key != key)
         {
+          removed.push(this.state.acceptedFasta[i]);
+        }
+      }
+      this.setState({acceptedFasta: removed});
+
+    }
+    
+    
+  }// end of function delete rejected element
+
+  deleteRejectedElement(key){
+   
+    var removed = [];
+    if ( this.state.rejectedFasta.length == 1)
+    {
+        this.setState({rejectedFasta: removed});
+    }else{
+      for ( var i = 0; i<this.state.rejectedFasta.length; i++)
+      {
+        if ( this.state.rejectedFasta[i].key != key)
+        {
+          removed.push(this.state.rejectedFasta[i]);
+        }
+      }
+      this.setState({rejectedFasta: removed});
+
+    }
+    
+    
+  }// end of function delete element
+
+
+  dropFirstFasta(accepted, rejected) {
+    var arrayFastaFiles = this.state.acceptedFasta;
+    var rejectedFastaFiles = this.state.rejectedFasta;
+
+    if ( rejected.legnth != 0 )
+    {
+      rejected.forEach(file =>{
+        
+        if ( file.size >= 3145728 )
+        {
+          var name = file.name;
+          var size = file.size;
+          var key = file.size + file.lastModified;
+          status = 'The file size exceeds 3 MB ';
+              rejectedFastaFiles.push({
+                'name': name,
+                'size': size,
+                'key': key,
+                'status': status
+              });
+              this.setState({rejectedFasta: rejectedFastaFiles});
+        
+        }else{
+          var name = file.name;
+          var size = file.size;
+          status = 'The file have not the correct extension';
+              rejectedFastaFiles.push({
+                'name': name,
+                'size': size,
+                'key': key,
+                'status': status
+              });
+              this.setState({rejectedFastaFiles: rejectedFastaFiles});
+
+        }
+
+      });
+    }// end of if rejected length
+     
+    accepted.forEach(file =>{
+        const reader = new FileReader();
+          reader.onload = () => {
+          var name = file.name;
+          var size = file.size;
+          var key = file.size + file.lastModified;
           
-          //take and format fasta sequence
-          var encodeFasta = files.base64[i].substring(13, files.base64[i].length);
-          var decodeFasta = base64.decode(encodeFasta);
-          var formatFasta = decodeFasta.replace(/(?:\r\n|\r|\n)/g, '\n');
-          var formatFasta = formatFasta.concat('\\n');
-          
+          const fasta = reader.result;
+          var formatFasta = fasta.replace(/(?:\r\n|\r|\n)/g, '\n');
+          //var formatFasta = formatFasta.concat('\\n');
           //indentify format Fasta
           var correctFormat = parseFasta(formatFasta);
-          
 
           if ( correctFormat == true ){
               status = 'Success';
               arrayFastaFiles.push({
                   'name': name,
                   'size': size,
+                  'key': key,
                   'fasta': formatFasta,
                   'status': status
                 });
           }else{
-            this.setState({disabledButton: 'error'});
             status = 'Error in format fasta';
-            arrayFastaFiles.push({
+            rejectedFastaFiles.push({
                   'name': name,
                   'size': size,
+                  'key': key,
                   'status': status
                 });
           }
           
-          this.setState({firstFastaFiles: arrayFastaFiles});
-          
+          this.setState({referenceFasta: rejectedFastaFiles});
 
-        }else{
-            status = 'The file size exceeds 3 MB ';
-            arrayFastaFiles.push({
-              'name': name,
-              'size': size,
-              'status': status
-            });
-            this.setState({firstFastaFiles: arrayFastaFiles});
+        }
         
-        }// end of if/else filter size
+
+        reader.onabort = () => console.log('file reading was aborted');
+        reader.onerror = () => console.log('file reading has failed');
+
+        reader.readAsBinaryString(file);
+
         
-        
-      }// end of loop for of files
-    }
-    catch(err){
-      
-      var name  = files.fileList[i].name;
-      var size = files.fileList[i].size;
-      var status = 'The file have a wrong extension';
-      arrayFastaFiles.push({
-              'name': name,
-              'size': size,
-              'status': status
-            });
-            this.setState({firstFastaFiles: arrayFastaFiles});
-    }    
+    });
     
-  }
+  }// end of function drop first fasta
 
-  createSecondFasta(files){
-  
-    var name = files.fileList[0].name;
-    var size = files.fileList[0].size;
-    var status = '';
-    try{
-      if( size <= 3145728 )
-      {
-           //take and format fasta sequence
-          var encodeFasta = files.base64.substring(13, files.base64.length);
-          var decodeFasta = base64.decode(encodeFasta);
-          var formatFasta = decodeFasta.replace(/(?:\r\n|\r|\n)/g, '\n');
-          var formatFasta =  formatFasta.concat('\n');
+  dropSecondFasta(accepted, rejected) {
+    var arrayFastaFiles = [];
+    var rejectedFastaFiles = [];
+
+    if ( rejected.legnth != 0 )
+    {
+      rejected.forEach(file =>{
+        
+        if ( file.size >= 3145728 )
+        {
+          var name = file.name;
+          var size = file.size;
+          var key = file.size + file.lastModified;
+          status = 'The file size exceeds 3 MB ';
+              rejectedFastaFiles= {
+                'name': name,
+                'size': size,
+                'key': key,
+                'status': status
+              };
+          this.setState({secondFastaFile: rejectedFastaFiles});
+        
+        }else{
+          var name = file.name;
+          var size = file.size;
+          status = 'The file have not the correct extension';
+              rejectedFastaFiles = {
+                'name': name,
+                'size': size,
+                'key': key,
+                'status': status
+              };
+          this.setState({secondFastaFile: rejectedFastaFiles});
+
+        }
+
+      });
+    }// end of if rejected length
+     
+    accepted.forEach(file =>{
+        const reader = new FileReader();
+          reader.onload = () => {
+          var name = file.name;
+          var size = file.size;
+          var key = file.size + file.lastModified;
           
+          const fasta = reader.result;
+          var formatFasta = fasta.replace(/(?:\r\n|\r|\n)/g, '\n');
+          //var formatFasta = formatFasta.concat('\\n');
           //indentify format Fasta
           var correctFormat = parseFasta(formatFasta);
-          if ( correctFormat == true)
-          {
-            status = 'Success';
-            var fasta = {
-              'name': name,
-              'size': size,
-              'fasta': formatFasta,
-              'status': status
-            }
+
+          if ( correctFormat == true ){
+              status = 'Success';
+              arrayFastaFiles = {
+                  'name': name,
+                  'size': size,
+                  'key': key,
+                  'fasta': formatFasta,
+                  'status': status
+                };
           }else{
-            this.setState({disabledButton: 'error'});
             status = 'Error in format fasta';
-            var fasta = {
-              'name': name,
-              'size': size,
-              'status': status
-            }
+            arrayFastaFiles = {
+                  'name': name,
+                  'size': size,
+                  'key': key,
+                  'status': status
+                };
           }
+          this.setState({secondFastaFile: arrayFastaFiles});
+        }
+        
 
+        reader.onabort = () => console.log('file reading was aborted');
+        reader.onerror = () => console.log('file reading has failed');
 
-          this.setState({secondFastaFile: fasta});
+        reader.readAsBinaryString(file);
 
-      }else{
-          var fasta = {
-              'name': name,
-              'size': size,
-              'status': 'The file size exceeds 3 MB'
-          }
-          this.setState({secondFastaFile: fasta});
-      }
-    }
-    catch(err){
-      this.setState({disabledButton: 'error'});
-      status = 'The file have a wrong extension';
-      var fasta = {
-              'name': name,
-              'size': size,
-              'status': status
-          }
-          this.setState({secondFastaFile: fasta});
-    }    
+        
+    });
+    
+  }// end of function drop seconfasta
+
 
   
-  }// end of create second fasta function
 
   submitForm(e){
     e.preventDefault();
     var link = "https://sing-group.org/funpep/status/";
     var resultArray = [];
 
-    for (var i = 0; i<this.state.firstFastaFiles.length; i++)
+    for (var i = 0; i<this.state.acceptedFasta.length; i++)
     {
 
       //create json for api 
-      var comparingFasta = this.state.firstFastaFiles[i].fasta;
+      var comparingFasta = this.state.acceptedFasta[i].fasta;
       var referenceFasta = this.state.secondFastaFile.fasta;
 
       var json ={
@@ -263,45 +350,82 @@ class Analysis extends Base {
       })
     
     }
-  }
+  }// end of submit function
+
 
 
   render() {
    var disabledButton = false;
     // disabled / enabled button
-     if( this.state.threshold != '' && this.state.threshold > 0 && this.state.threshold <= 100 && this.state.disabledButton != 'error' )
+   
+
+     if( this.state.threshold != '' && this.state.threshold > 0 && this.state.threshold <= 100 ) 
      {
-        disabledButton = true;
+        if( this.state.rejectedFasta.length == 0 && this.state.acceptedFasta.length > 0 && this.state.secondFastaFile.status == 'Success' )
+        {
+          disabledButton = true;
+        }
      }
       
     return (
-        <div className="content">
-          <h3>Check analysis status</h3>
-          
-          
-            <label> Upload the comparing files </label>
-            <ReactFileReader multipleFiles={true} fileTypes={[".faa",".fasta"]} base64={true} handleFiles={this.createFirstFasta}>
-              <button className='btn btn-default'>Upload comparing files</button>
-            </ReactFileReader>
 
-            <ShowFirstFasta fasta={this.state} />
+      <div className="content">
+        <h3>Upload a new analysis</h3>
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        <section>
+        
+        
+
+      </section>
+
+        <div className="row">
+          <div className="col-lg-6">
+            <label>FASTA comparing file</label>
+            <div className="dropzone">
+              <Dropzone maxSize={3145728} onDrop={this.dropFirstFasta.bind(this)} accept={".faa, .fasta"}>
+               <p>Try dropping some files here, or click to select files to upload.</p>
+              </Dropzone>
+            </div>
+            <div>
+              <ul id="fastaList">
+                {this.state.acceptedFasta.map((fastaFile) => 
+                  <li className="Success" key={fastaFile.key}>{fastaFile.name} - {fastaFile.size} <button className="btn btn-default circleButton" onClick={this.deleteElement.bind(null, fastaFile.key)}> X </button></li>
+                )}
+              </ul>
+              <ul id="fastaList">
+                {this.state.rejectedFasta.map((fastaFile) => 
+                  <li key={fastaFile.key}>{fastaFile.name} - {fastaFile.size} - {fastaFile.status} <button className="btn btn-default circleButton" onClick={this.deleteRejectedElement.bind(null, fastaFile.key)}> X </button></li>
+                )}
+              </ul>
+            </div>
+            
+          </div>
 
 
-            <label> Upload the reference file </label>
-            <ReactFileReader multipleFiles={false} fileTypes={[".faa",".fasta"]} base64={true} handleFiles={this.createSecondFasta}>
-              <button className='btn btn-default'>Upload reference file</button>
-            </ReactFileReader>
-
+          <div className="col-lg-6">
+            <label>FASTA reference file</label>
+            <div className="dropzone">
+              <Dropzone maxSize={3145728} multiple={false} onDrop={this.dropSecondFasta.bind(this)} accept={".faa, .fasta"}>
+               <p>Try dropping some files here, or click to select files to upload.</p>
+              </Dropzone>
+            </div>
             <div id="referenceFastaFile">
               <p className={this.state.secondFastaFile.status}> {this.state.secondFastaFile.status} {this.state.secondFastaFile.name}{this.state.secondFastaFile.name ? ' - Size:' : ''} {this.state.secondFastaFile.size} </p>
             </div>
-
-            <Input type="text" placeholder="Enter threshold" ref="threshold" onChange={this.UpdateThreshold}  />
-            
-            <div className="buttons">
-                <ButtonInput type="submit" value="Check"  disabled={!disabledButton} onClick={this.submitForm} />
+           
+          </div>
+        </div>
+        <br/>
+        <div className="row">
+          <div className="col-lg-3">
+            <label>Alignment threshold</label>
+              <Input type="number" min="0.00" max="100.00" step="0.01" placeholder="Enter threshold" ref="threshold" onChange={this.UpdateThreshold}  />
             </div>
-          
+            <div className="col-lg-9"></div>
+          </div>
+          <div className="buttons">
+            <ButtonInput type="submit" value="Check"  disabled={!disabledButton}  onClick={this.submitForm} />
+          </div>          
             <ShowResults fasta={this.state} />
         </div>
 
