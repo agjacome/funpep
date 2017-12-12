@@ -49,6 +49,24 @@
   .box-shadow(0px; 1px; 9px; 3px);
 }
 
+.d-none{
+  display:none;
+}
+
+.p-relative{
+  position:relative;
+}
+
+#spinner-div{
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10; 
+  background-color: rgba(255, 255, 255, 0.7)
+}
+
 .logo {
   font-size:   2.5em;
   font-weight: 700;
@@ -97,6 +115,24 @@
     width: 300px;
     text-align: center;
     margin: 30px auto 0;
+  }
+}
+
+.dropzone{
+  p{
+    padding: 10px;
+  }
+  div{
+    max-height: 100px;
+  }
+}
+.success,.failure{
+  span{
+    float:left;
+    margin-right: 5px;
+  }
+  .clear{
+    clear:both;
   }
 }
 
@@ -154,6 +190,7 @@
   #fastaList{
      list-style: none;
      margin-bottom:2%;
+     padding: 0;
   }
   #fastaList li{
      margin-top:2%  ;
@@ -161,20 +198,18 @@
    #fastaList li{
      color:#BF6666;
   }
-   #fastaList .Success{
-     color:#80CD47;
+   #fastaList .success{
+     color:#24a526;
   }
 
   #referenceFastaFile p{
-    margin-left: 4%;
     margin-top: 2%;
     margin-bottom: 2%;
     color:#BF6666;
   }
 
   #referenceFastaFile .Success{
-    color:#80CD47;
-
+    color:#24a526;   
   }
 
   #resultList{
@@ -182,11 +217,13 @@
   }
 
   #resultList a:link{
-    color:#80CD47;
+    color:#24a526;
   }
   .circleButton{
       border-radius: 23px;
   }
   
 }
+
+.mg-react-spinner{position:relative;height:100%}.mg-react-spinner .l-center{position:absolute;left:50%;top:50%;z-index:1}.mg-react-spinner__main{border:16px solid;border-radius:50%;border-top:16px solid;-webkit-animation:mg-spin 1s ease-out infinite;animation:mg-spin 1s ease-out infinite}@-webkit-keyframes mg-spin{0%{-webkit-transform:rotate(0)}100%{-webkit-transform:rotate(360deg)}}@keyframes mg-spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}.mg-react-spinner{position:relative;height:100%}.mg-react-spinner .l-center{position:absolute;left:50%;top:50%;z-index:1}.mg-react-spinner__main{border:16px solid;border-radius:50%;border-top:16px solid;-webkit-animation:mg-spin 1s ease-out infinite;animation:mg-spin 1s ease-out infinite}@-webkit-keyframes mg-spin{0%{-webkit-transform:rotate(0)}100%{-webkit-transform:rotate(360deg)}}@keyframes mg-spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
 

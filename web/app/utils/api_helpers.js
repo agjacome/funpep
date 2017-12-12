@@ -1,5 +1,5 @@
 import axios   from 'axios';
-import api_url from '../config/api_url';
+import { api_url } from '../config/api_url';
 
 function status(uuid) {
   return axios.get(`${api_url}/analysis/${uuid}`);

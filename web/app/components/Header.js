@@ -16,8 +16,8 @@ const Header = () => {
         </Navbar.Header>
         <Navbar.Collapse>
           <Nav pullRight>
-            <LinkContainer to={'/analysis'}><NavItem>Analysis</NavItem></LinkContainer>
-            <LinkContainer to={'/status'}><NavItem>Status</NavItem></LinkContainer>
+            <LinkContainer to={'/new'}><NavItem>New Analysis</NavItem></LinkContainer>
+            <LinkContainer to={'/status'}><NavItem>Check Status</NavItem></LinkContainer>
             <LinkContainer to={'/help'}><NavItem>Help</NavItem></LinkContainer>
             <LinkContainer to={'/about'}><NavItem>About</NavItem></LinkContainer>
           </Nav>

@@ -13,7 +13,7 @@ const Home = () => {
       </p>
       <div className="buttons">
         <ButtonToolbar>
-          <LinkContainer to={'/analysis'}>
+          <LinkContainer to={'/new'}>
             <Button bsStyle="info" bsSize="large">New Analysis</Button>
           </LinkContainer>
           <LinkContainer to={'/status'}>

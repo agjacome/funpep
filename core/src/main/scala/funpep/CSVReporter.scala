@@ -28,7 +28,8 @@ import util.ops.path._
 final class CSVReporter[A] private (
   val directory: Path,
   val reference: Fasta[A],
-  val filtered:  Fasta[A]
+  val filtered:  Fasta[A],
+  val threshold: Double
 )(implicit ev: A ⇒ Compound) {
 
   import CSVReporter._
@@ -61,19 +62,25 @@ final class CSVReporter[A] private (
     lazy val csvLines = matLines traverse {
       case (h, (i, d)) ⇒ csvLine(i, (h, d), matrix)
     }
-    csvLines | IList.empty
+    csvLines.getOrElse(IList.empty).filter(_ != "")
   }
 
   def csvLine(lineIndex: Int, line: MatrixLine, matrix: Matrix): Maybe[String] = {
     lazy val lineHeader = line._1
-    lazy val lineDists  = line._2.toIList.updated(lineIndex, -∞).take(referenceSize)
-    for {
-      maxValue ← lineDists.maximum.toMaybe
-      maxIndex ← lineDists.indexOf(maxValue).toMaybe
-      compared ← indexedMatrix(matrix).lookup(maxIndex).toMaybe
-      cmpSeq   ← findSequence(filtered, lineHeader)
-      refSeq   ← findSequence(reference, compared._1)
-    } yield s""""${cmpSeq.header}","${refSeq.header}","$maxValue""""
+    lazy val lineDists  = line._2.toIList.updated(lineIndex, -∞).take(referenceSize)//.filter(_ >= threshold)
+    LogInside.log(s"$lineHeader - $lineDists")
+    if(!lineDists.empty) {
+      for {
+        maxValue ← lineDists.maximum.toMaybe
+        maxIndex ← lineDists.indexOf(maxValue).toMaybe
+        compared ← indexedMatrix(matrix).lookup(maxIndex).toMaybe
+        cmpSeq ← findSequence(filtered, lineHeader)
+        refSeq ← findSequence(reference, compared._1)
+      } yield
+        s""""${cmpSeq.header}","${refSeq.header}","$maxValue""""
+    }else{
+      Maybe.fromNullable(",,")
+    }
   }
 
   private def indexedMatrix(matrix: Matrix): Int ==>> (String, NonEmptyList[Double]) =
@@ -90,7 +97,7 @@ final class CSVReporter[A] private (
 
   private def parseMatrixOf(fasta: Path): KleisliP[Path, Matrix] =
     Clustal.withDistanceMatrixOf(fasta) { matrix ⇒
-      MatrixParser.fromFileW(matrix) <* matrix.delete <* fasta.delete
+      MatrixParser.fromFileW(matrix) //<* matrix.delete <* fasta.delete
     }
 
 }
@@ -112,12 +119,14 @@ object CSVReporter {
     lazy val matrixHead = takeLine.void
     lazy val matrixLine = (header <~ whitespaces) ~ distances
 
-    lazy val header    = takeWhile(_ != ' ') <~ char(' ')
-    lazy val whitespaces = takeWhile(_ == ' ' ) <~ notChar(' ')
+    lazy val header    = takeWhile(_ != ' ')
+    lazy val whitespaces = takeWhile(_ == ' ' )
     lazy val distances = sepBy1(double, horizontalWhitespace) <~ (eol | eoi)
 
-    def fromString(str: String): ErrorMsg ∨ Matrix =
+    def fromString(str: String): ErrorMsg ∨ Matrix = {
+      LogInside.log(s"From string: $str")
       matrix.parseOnly(str).either
+    }
 
     def fromFile(path: Path): Process[Task, ErrorMsg ∨ Matrix] =
       textR(path).map(fromString)
@@ -133,14 +142,14 @@ object CSVReporter {
 
   }
 
-  def report[A](reference: Fasta[A], filtered: Fasta[A], csvFile: Path)(implicit ev: A ⇒ Compound): KleisliP[Path, Unit] =
-    new CSVReporter(csvFile.parent, reference, filtered).report(csvFile)
+  def report[A](reference: Fasta[A], filtered: Fasta[A], csvFile: Path, threshold: Double)(implicit ev: A ⇒ Compound): KleisliP[Path, Unit] =
+    new CSVReporter(csvFile.parent, reference, filtered, threshold).report(csvFile)
 
-  def report[A](reference: Path, filtered: Path, csvFile: Path, parser: FastaParser[A])(implicit ev: A ⇒ Compound): KleisliP[Path, Unit] =
+  def report[A](reference: Path, filtered: Path, csvFile: Path, parser: FastaParser[A], threshold: Double)(implicit ev: A ⇒ Compound): KleisliP[Path, Unit] =
     for {
       ref ← parser.fromFileW(reference).liftKleisli
       fil ← parser.fromFileW(filtered).liftKleisli
-      out ← report(ref, fil, csvFile)
+      out ← report(ref, fil, csvFile, threshold)
     } yield out
 
 }

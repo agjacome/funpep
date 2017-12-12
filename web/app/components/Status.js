@@ -46,7 +46,7 @@ const ShowStatus = ({uuid, status, queue}) => {
         <ListGroupItem bsStyle={style}>Status: <strong>{ S(status.status).capitalize().s }</strong></ListGroupItem>
 
         { created  && <ListGroupItem>Position: <strong>{ queue }</strong></ListGroupItem> }
-        { failed   && <ListGroupItem>Error: { status.error }</ListGroupItem>                    }
+        { failed   && <ListGroupItem>Error: { status.error }</ListGroupItem>              }
 
         <ListGroupItem>Date: { moment.unix(status.time).toString() }</ListGroupItem>
 

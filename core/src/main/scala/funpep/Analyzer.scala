@@ -6,8 +6,10 @@ import java.nio.file.{Paths, Files}
 
 import scalaz.concurrent.{Strategy, Task}
 import scalaz.stream._
+
 import scalaz.syntax.applicative._
 import scalaz.syntax.kleisli._
+import scalaz.syntax.semigroup._
 import scalaz.syntax.nel._
 import com.typesafe.scalalogging._
 import atto._
@@ -56,7 +58,7 @@ final class Analyzer[A]  private (
       _ ← split(ref, cmp, in.temporal)
       fil ← filter(ref, in)
       _ ← fil.toFile(in.filtered).liftKleisli
-      _ ← align(in)
+      _ ← align(ref, fil, in)
       _ ← report(ref, fil, in)
       out ← finish(in)
     } yield out
@@ -85,6 +87,7 @@ final class Analyzer[A]  private (
     analysis.phyloXML.delete           *>
     analysis.treeImage.delete          *>
     analysis.csvReport.delete          *>
+    analysis.mergedSeq.delete          *>
     analysis.toFile(analysis.metadata) >| analysis
 
   private def start(analysis: Analysis): KleisliP[Path, Analysis] = {
@@ -94,7 +97,9 @@ final class Analyzer[A]  private (
 
   private def finish(analysis: Analysis): KleisliP[Path, Analysis] = {
     val finished = analysis.withStatus(Finished(now))
-    (finished.toFile(finished.metadata) *> finished.temporal.deleteRecursive >| finished).liftKleisli
+    (finished.toFile(finished.metadata) *>
+     finished.temporal.deleteRecursive  *>
+     finished.mergedSeq.delete          >| finished).liftKleisli
   }
 
   private def fail(analysis: Analysis, error: String): KleisliP[Path, Analysis] = {
@@ -111,11 +116,19 @@ final class Analyzer[A]  private (
     filterProc.mapK[Process[Task, ?], Fasta[A]](_.reduceMap(seq ⇒ Fasta(seq)))
   }
 
-  private def align(analysis: Analysis): KleisliP[Path, Unit] = {
-    Clustal.guideTree(analysis.filtered, analysis.alignment, analysis.newick)}
+  private def align(reference: Fasta[A], filtered: Fasta[A], analysis: Analysis): KleisliP[Path, Unit] = {
+    for {
+      fasta  ← treeFasta(reference, filtered, analysis).liftKleisli
+      guide  ←  Clustal.guideTree(fasta, analysis.alignment, analysis.newick)
+    } yield guide
+  }
+
+  private def treeFasta(reference: Fasta[A], filtered: Fasta[A], analysis: Analysis): Process[Task, Path] = {
+    (reference ⊹ filtered).toFile(analysis.mergedSeq) >| analysis.mergedSeq
+  }
 
   private def report(reference: Fasta[A], filtered: Fasta[A], analysis: Analysis): KleisliP[Path, Unit] = {
-    CSVReporter.report(reference, filtered, analysis.csvReport) *>
+    CSVReporter.report(reference, filtered, analysis.csvReport, analysis.threshold) *>
     TreeReporter.generateTreeFiles(analysis.newick, analysis.annotations)(analysis.phyloXML, analysis.treeImage).liftKleisli
   }
 
@@ -134,6 +147,7 @@ object Analyzer {
     def phyloXML:  Path = analysis.directory / "similar.phylo.xml"
     def treeImage: Path = analysis.directory / "similar.png"
     def csvReport: Path = analysis.directory / "report.csv"
+    def mergedSeq: Path = analysis.directory / "merged.fasta"
   }
 
   def apply[A](database: Path)(implicit parser: Parser[A], ev: A ⇒ Compound, st: Strategy): Analyzer[A] =

@@ -3,6 +3,7 @@ import Loader from 'react-loader';
 import Base   from './Base';
 import DownloadButton from './report/DownloadButton';
 import ReportTable from './report/ReportTable';
+import HeatMap from './report/HeatMap'
 
 import { LinkContainer } from 'react-router-bootstrap';
 import { Alert, Button, ListGroup, ListGroupItem } from 'react-bootstrap';
@@ -11,8 +12,6 @@ import S      from 'string';
 import moment from 'moment';
 import { status, file } from '../utils/api_helpers';
 import Phylocanvas from 'react-phylocanvas';
-
-
 
 
 const PhyloTree = ({tree}) => {
@@ -59,6 +58,7 @@ const ShowStatus = ({uuid, status, report, tree}) => {
       </div>
       <br/> 
       <ReportTable products={report} /><br/> 
+      <HeatMap report={report} /><br/>
       <div className="buttons">
          <LinkContainer to={'/status/' + uuid}><Button>Back</Button></LinkContainer>
       </div>
@@ -85,7 +85,7 @@ class Report extends Base {
       found:  false,
       uuid:   '',
       report: '',
-      tree: '',
+      tree:   '',
       status: {}
     }
 
@@ -140,7 +140,7 @@ class Report extends Base {
       found:  false,
       uuid:   '',
       report: '',
-      tree: '',
+      tree:   '',
       status: {}
     });
   }
@@ -173,7 +173,7 @@ class Report extends Base {
       <div className="content">
         {
           this.state.found
-            ? <ShowStatus uuid={this.state.uuid} status={this.state.status} report={this.state.report} tree={this.state.tree}/>
+            ? <ShowStatus uuid={this.state.uuid} status={this.state.status} report={this.state.report} tree={this.state.tree} />
             : <ShowNotFound uuid={this.props.params.uuid} />
           }
       </div>

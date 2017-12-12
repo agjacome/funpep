@@ -31,7 +31,7 @@ class Check extends Base {
   }
 
   handleSubmit() {
-    this.context.router.push('/status/' + this.state.uuid);
+    this.context.router.push('/analysis/' + this.state.uuid);
   }
 
   render() {
