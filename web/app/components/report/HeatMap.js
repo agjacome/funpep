@@ -1,111 +1,242 @@
-import React  from 'react';
-import Base   from '../Base';
 import AmCharts from '@amcharts/amcharts3-react';
+function identityColor(identity)
+  {
+    var colors = ['#FFFFFF', '#FF0000', '#FF9100', '#F2FF00', '#9DFF00', '#00FF00'];
+    // WHITE
+    var color = colors[0];
+     
 
-class HeatMap extends Base {
-  constructor(props) {
-    super(props);   
-  
-    this.state = {
-      references: [],
-      graphs: [],
-      sourceData: []
+    // RED 
+    if ( identity != -1 && identity <= 8 )
+    {
+      color = colors[1];
     }
-  } 
-  
- componentWillReceiveProps() {
-    //console.log(this.props.report)
-    var ref = [];
-    for(i in this.props.report){
-      ref.push(this.props.report[i].reference)
+    // ORANGE 
+    if ( identity > 8 && identity <= 15  )
+    {
+      color = colors[2];
     }
-    var refs = ref.filter(function(elem, index, self) {
-        return index == self.indexOf(elem);
-    });
-    var comp = [];
-    for(i in this.props.report){
-      comp.push(this.props.report[i].comparing)
-    }    
-   
-    var count = {};
-    for(var i = 0; i < ref.length; i++){
-      if(!(ref[i] in count))count[ref[i]] = 0;
-        count[ref[i]]++;
+    // YELLOW
+    if ( identity > 15 && identity <= 23 )
+    {
+      color = colors[3];
     }
-    console.log(count);
-   
-   
-    var sourceData = [];
-    for (var i = 0; i < refs.length; i++) {
-      var dataPoint = {
-        reference: refs[i] 
-      }
-
-      // generate value for each ref
-      for (var h = 0; h <= refs.length; h++) {
-        dataPoint['value' + h] = Math.round(this.props.report[i].similarity  * 100) / 100
-      }
-
-      sourceData.push(dataPoint);
+    // GREEN
+    if ( identity > 23 && identity <= 31 )
+    {
+      color = colors[4];
+    }
+    // GREEN MATE
+    if ( identity > 31)
+    {
+      color = colors[5];
     }
 
-    var colors = ['#b52929', '#9d3226', '#974c29', '#915c2c', '#8a6730', '#837134', '#7b7a38','#73833c', '#698b41', '#5d9145', '#3c763d'];
-    for (i in sourceData) {
-      for (var h = 0; h <= refs.length; h++) {
-        console.log(colors[Math.floor(sourceData[i]['value' + h]/10)]);
-        sourceData[i]['color' + h] = colors[Math.floor((Math.random() * 11) + 1)-1];//Math.floor(sourceData[i]['value' + h]/10)];
-        sourceData[i]['hour' + h] = 1;
-      }
-    }
-    
-    var graphs = [];
-    for (var h = 0; h <= refs.length; h++) {
-      graphs.push({
-        "balloonText": "Similarity percentaje: [[value" + h + "]]%",
-        "fillAlphas": 1,
-        "lineAlpha": 0,
-        "type": "column",
-        "colorField": "color" + h,
-        "valueField": "hour" + h
-      });
-    } 
-    
-    this.setState({
-      references: refs,
-      graphs: graphs,
-      sourceData: sourceData
-    });
+    return color;
   }
-  
-  render() {
-      return (
-          React.createElement(AmCharts.React, {
-            style: {
-              width: "100%",
-              height: "500px"
-            },
-            options: {
-              "dataProvider": this.state.sourceData,
-              "type": "serial",
-              "valueAxes": [{
-                "stackType": "regular",
-                "axisAlpha": 0.3,
-                "gridAlpha": 0,
-                "maximum": 15
-              }],
-              "graphs": this.state.graphs,
-              "columnWidth": 1,
-              "categoryField": "reference",
-              "categoryAxis": {
-                "gridPosition": "start",
-                "axisAlpha": 0,
-                "gridAlpha": 0,
-                "position": "left"
-              }
-            }
-          })
-      );
+
+function repeatColor(repeat)
+{
+  var colors = ['#FFFFFF', '#FF0000', '#FF9100', '#F2FF00', '#9DFF00', '#00FF00'];
+  // WHITE
+  var color = colors[0];
+   
+
+  // RED 
+  if ( repeat ==  0 )
+  {
+    color = colors[1];
   }
+  // ORANGE 
+  if ( repeat > 0 && repeat <= 2  )
+  {
+    color = colors[2];
+  }
+  // YELLOW
+  if ( repeat > 2 && repeat <= 6 )
+  {
+    color = colors[3];
+  }
+  // GREEN
+  if ( repeat > 6 && repeat <= 15 )
+  {
+    color = colors[4];
+  }
+  // GREEN MATE
+  if ( repeat > 15)
+  {
+    color = colors[5];
+  }
+
+  return color;
 }
 
-export default HeatMap;
+  function contIdentity(obj) {
+   var count=0;
+   for(var prop in obj) {
+      if (prop.indexOf('Identity') != -1 )
+      {
+         ++count;
+      }
+   }
+   return count;
+}
+function contRepeat(obj) {
+   var count=0;
+   for(var prop in obj) {
+      if (prop.indexOf('Repeat') != -1 )
+      {
+         ++count;
+      }
+   }
+   return count;
+}
+function deleteDups(array){
+  var unique = [];
+  $.each(array, function(i, el){
+      if($.inArray(el, unique) === -1) unique.push(el);
+  });
+   return unique;
+}
+
+
+function getReferences(data){
+
+  var regExp = new RegExp(('^>.*'),"gim");
+  var matches = null;
+  var i = 0;
+  var sequences = [];
+  while (matches = regExp.exec( data )){
+    sequences[i] = matches[0];
+    i++;
+  }
+  return sequences;
+}
+
+
+function createIdentityDataChart(CSVElements, charData, graphs, references, comparingName){
+  
+  var data = [];
+  var j = 0;
+  var CSVReferences = [];
+  var uniqueCSVReferences = [];
+  var uniqueReferences = [];
+  var cont = 0;
+  
+  if ( charData.length == 0 )
+  {
+    for ( var i = 0; i < references.length; i++)
+    {
+      var reference = references[i].slice(1, 14)+'...';
+      charData[i] = {Reference: reference}
+    }
+  }
+
+  for( var k = 0; k < charData.length; k++)
+  {
+    var maxIdentity = 0;
+    for (var l = 1; l < CSVElements.length-1; l++)
+    {
+        var CSVReference = CSVElements[l][1].slice(0, 13)+"...";
+        if ( CSVReference == charData[k].Reference )
+        {
+          if ( CSVElements[l][2] > maxIdentity)
+          {
+            maxIdentity = CSVElements[l][2];
+          }
+        }
+    }
+    var number = contIdentity(charData[k]);
+    charData[k]['Identity'+ number]=maxIdentity;
+    var color = identityColor(maxIdentity);
+    charData[k]['Color' + number] = color;
+    charData[k]['Comparing' + number] = 1;
+    charData[k]['ComparingName' + number] = comparingName;
+   
+  }// end of for Reference 
+
+ 
+  var graphs = [];
+  for (var i = 0; i <= charData.length; i++) {
+    graphs.push({
+      "balloonText": "<b>Indentity: [[Identity" + i + "]] </b></br>Comparing: [[ComparingName" + i + "]] </br> Reference: [[Reference]]",
+      "fillAlphas": 1,
+      "lineAlpha": 0.1,
+      "type": "column",
+      "colorField": "Color" + i,
+      "valueField": "Comparing" + i
+    });
+  }
+
+  data = {
+    sourceData: charData,
+    graphs: graphs,
+    references: references
+  };
+  
+  return data
+}
+
+
+
+function createRepeatChart(CSVElements, charData, graphs, references, comparingName){
+  var data = [];
+  var j = 0;
+  var CSVReferences = [];
+  var uniqueCSVReferences = [];
+  var uniqueReferences = [];
+  var cont = 0;
+  
+  if ( charData.length == 0 )
+  {
+    for ( var i = 0; i < references.length; i++)
+    {
+      var reference = references[i].slice(1, 14)+'...';
+      charData[i] = {Reference: reference}
+    }
+  }
+
+  for( var k = 0; k < charData.length; k++)
+  {
+    var cont = 0;
+    for (var l = 1; l < CSVElements.length-1; l++)
+    {
+        var CSVReference = CSVElements[l][1].slice(0, 13)+"...";
+        if ( CSVReference == charData[k].Reference )
+        {
+          cont++;
+        }
+    }
+    var number = contRepeat(charData[k]);
+    charData[k]['Repeat'+ number]=cont;
+    var color = repeatColor(cont);
+    charData[k]['Color' + number] = color;
+    charData[k]['Comparing' + number] = 1;
+    charData[k]['ComparingName' + number] = comparingName;
+   
+  }// end of for Reference 
+
+ 
+  var graphs = [];
+  for (var i = 0; i <= charData.length; i++) {
+    graphs.push({
+      "balloonText": "<b>Repeat: [[Repeat" + i + "]] </b></br>Comparing: [[ComparingName" + i + "]] </br> Reference: [[Reference]]",
+      "fillAlphas": 1,
+      "lineAlpha": 0.1,
+      "type": "column",
+      "colorField": "Color" + i,
+      "valueField": "Comparing" + i
+    });
+  }
+
+  data = {
+    sourceData: charData,
+    graphs: graphs,
+    references: references
+  };
+  
+  return data;
+
+}
+
+export { createIdentityDataChart, getReferences, createRepeatChart };

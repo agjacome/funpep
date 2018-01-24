@@ -8,68 +8,105 @@ import { Alert, Button, ButtonToolbar, ListGroup, ListGroupItem } from 'react-bo
 
 import S      from 'string';
 import moment from 'moment';
-import { status, queuePosition } from '../utils/api_helpers';
+import { file, status, queuePosition, statusMultiple } from '../utils/api_helpers';
+import DownloadButton from './report/DownloadButton';
+import { createIdentityDataChart, getReferences, createRepeatChart } from './report/HeatMap';
+import ReactSpinner from 'reactjs-spinner';
 
-const ShowStatus = ({uuid, status, queue}) => {
-  const created  = status.status === 'created';
-  const started  = status.status === 'started';
-  const finished = status.status === 'finished';
-  const failed   = status.status === 'failed';
 
-  const style = created  ? "info"    :
-                started  ? "warning" :
-                finished ? "success" :
-                failed   ? "danger"  :
-                null;
+function CSVToArray( strData, strDelimiter ){
+        // Check to see if the delimiter is defined. If not,
+        // then default to comma.
+        strDelimiter = (strDelimiter || ",");
+        // Create a regular expression to parse the CSV values.
+        var objPattern = new RegExp(
+            (
+                // Delimiters.
+                "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
+                // Quoted fields.
+                "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+                // Standard fields.
+                "([^\"\\" + strDelimiter + "\\r\\n]*))"
+            ),
+            "gi"
+            );
+        // Create an array to hold our data. Give the array
+        var arrData = [[]];
+        // Create an array to hold our individual pattern
+        var arrMatches = null;
+        while (arrMatches = objPattern.exec( strData )){
+            // Get the delimiter that was found.
+            var strMatchedDelimiter = arrMatches[ 1 ];
+            if (
+                strMatchedDelimiter.length &&
+                strMatchedDelimiter !== strDelimiter
+                ){
+                // Since we have reached a new row of data,
+                // add an empty row to our data array.
+                arrData.push( [] );
+            }
+            var strMatchedValue;
+            if (arrMatches[ 2 ]){
+                strMatchedValue = arrMatches[ 2 ].replace(
+                    new RegExp( "\"\"", "g" ),
+                    "\""
+                    );
 
-  return (
-    <div>
-      <h3>Analysis '{uuid}'</h3>
-      <p>
-        Any existing analysis process in our system will be in one of four
-        different statuses: <em>Created, Started, Finished or Failed</em>. This
-        page will show you the current status of your analysis and the date and
-        time when that status was last changed.
-      </p>
-      <p>
-        <em>Created</em> means that the analysis has been enqueued, but not yet
-        started to process; in this case, the current job queue position will
-        also be displayed. <em>Started</em> means that the analysis process has
-        already started and is currently ongoing, but has not yet finished.&nbsp;
-        <em>Finished</em> means that the analysis process has finished
-        successfully; in this case a link to the analysis report page will also
-        be displayed. <em>Failed</em> means that the analysis process has found
-        an error and could not complete successfully; in this case, the error
-        message will also be displayed.
-      </p>
-      <ListGroup>
-        <ListGroupItem bsStyle={style}>Status: <strong>{ S(status.status).capitalize().s }</strong></ListGroupItem>
+            } else {
+                // We found a non-quoted value.
+                strMatchedValue = arrMatches[ 3 ];
+            }
 
-        { created  && <ListGroupItem>Position: <strong>{ queue }</strong></ListGroupItem> }
-        { failed   && <ListGroupItem>Error: { status.error }</ListGroupItem>                    }
-
-        <ListGroupItem>Date: { moment.unix(status.time).toString() }</ListGroupItem>
-
-        { finished &&
-          <div className="buttons">
-            <LinkContainer to={'/report/' + uuid}><Button>View Reports</Button></LinkContainer>
-          </div>
+            // Now that we have our value string, let's add
+            // it to the data array.
+            arrData[ arrData.length - 1 ].push( strMatchedValue );
         }
-         
-         
-          
-      </ListGroup>
-    </div>
-  );
-}
+        // Return the parsed data.
+        return( arrData );
+    }
+ 
+
 
 const ShowNotFound = ({uuid}) => {
   return (
     <Alert bsStyle="danger">
-      <strong>Analysis '{uuid}' not found</strong>
+      <strong>Analysis {uuid} not found</strong>
     </Alert>
   );
 }
+
+// if we find project then show analysis and graph
+const ShowProject = ({project, analysisData, configIdentity, graphIdentity, configRepeat, graphRepeat }) => {
+  return (
+    <div>
+      <h2> Project:  {project.uuid} </h2>
+      <p><b>Reference File:</b>  <DownloadButton uuid={project.fileUuid} name='reference.fasta' span={project.referenceFile} /></p>
+      <ul id="analysisList">
+          {analysisData.map((analysis) => 
+            <li class="col-md-12" key={analysis.uuid}>
+              <p className="titleAnalysis"> <b>Analysis: </b>
+                 <a target="_blank" href={'/report/' + analysis.uuid}> {analysis.uuid}  </a>
+              </p>
+              <p> <b>Status:</b>  <span className={analysis.status.status} > {analysis.status.status}  </span> </p>
+              <p> <b>Download Comparing File:</b>  <DownloadButton uuid={analysis.uuid} name='comparing.fasta' span={analysis.name} /></p>
+            </li>
+          )}
+      </ul>
+
+      { graphIdentity
+            ? <AmCharts.React options={configIdentity} style={{width: "100%", height: "500px"   }} />
+            : <ReactSpinner size={80} borderColor='#f2f0f0' borderTopColor='#e60000'>  </ReactSpinner>
+      }
+      { graphRepeat
+            ? <AmCharts.React options={configRepeat} style={{width: "100%", height: "500px"   }} />
+            : <ReactSpinner size={80} borderColor='#f2f0f0' borderTopColor='#e60000'>  </ReactSpinner>
+      }
+    </div>
+    
+  );
+}
+///
+
 
 class Analysis extends Base {
 
@@ -79,12 +116,27 @@ class Analysis extends Base {
     this.state = {
       loaded: false,
       found:  false,
-      uuid:   '',
-      status: {},
-      queue:  false
+      queue:  false,
+      project: {},
+      analysisData: [],
+      identityChart: {
+        graphs:[],
+        sourceData: [], 
+        data: [],
+        graph: false,
+        config: {"type": "serial"}
+      },
+      repeatChart: {
+        graphs:[],
+        sourceData: [], 
+        data: [],
+        graph: false,
+        config: {"type": "serial"}
+      },
+      references: [],
     }
-
     this.bindThis(
+      'onProjectSuccess',
       'onStatusSuccess',
       'onStatusFailure',
       'onQueueSuccess',
@@ -93,25 +145,268 @@ class Analysis extends Base {
   }
 
   componentDidMount() {
-    status(this.props.params.uuid)
-      .then(this.onStatusSuccess)
-      .catch(this.onStatusFailure);
+      var uuid = this.props.params.uuid;
+      var project = {uuid: uuid}
+      this.setState(project: project);
+     
+      statusMultiple(this.props.params.uuid)
+        .then(this.onProjectSuccess)
+        .catch(this.onProjectFailure);
+
+
+      // load heatmap
+      setTimeout(
+          function(){
+              if ( this.state.identityChart.data != [] )
+              {
+                var identityChart = this.state.identityChart;
+                identityChart.config = this.state.identityChart.data;
+                identityChart.graph = true;
+                this.setState({identityChart: identityChart}); 
+              }
+              if ( this.state.repeatChart.data != [] )
+              {
+                var repeatChart = this.state.repeatChart;
+                repeatChart.config = this.state.repeatChart.data;
+                repeatChart.graph = true;
+                this.setState({repeatChart: repeatChart}); 
+              }
+              
+            }
+        .bind(this), 3000);
+
   }
 
-  onStatusSuccess(response) {
+
+  onProjectSuccess(response){
+    
+    var parser = new DOMParser();
+    var xmlDoc = parser.parseFromString(response.data,"text/xml");
+    var analysis = xmlDoc.getElementsByTagName("analysis");
+    var analysisData = [];
+    this.setState({loaded: true});
+    // if project is empty
+
+    if ( analysis.length != 0 )
+    {
+      this.setState({found: true});
+      var projectNode = analysis[0].getElementsByTagName('project')[0];
+      var projectReferenceFile  = projectNode.getElementsByTagName('reference')[0].firstChild.nodeValue;
+      var projectUuid = projectNode.getElementsByTagName('uuid')[0].firstChild.nodeValue;
+      var project = {
+                        uuid: projectUuid,
+                        referenceFile: projectReferenceFile,
+                        fileUuid: analysis[0].getElementsByTagName('uuid')[1].firstChild.nodeValue
+                      };
+
+      this.setState({project: project});
+
+      var self = this;
+
+      file(analysis[0].getElementsByTagName('uuid')[1].firstChild.nodeValue, "reference.fasta")
+        .then(function(response){
+            var sequences = [];
+            sequences = getReferences(response.data);
+            if ( sequences != [] )
+            {
+
+              self.setState({references: sequences});
+              // loop for analysis values
+              for ( var i = 0; i < analysis.length; i++)
+              {
+                var analysisName = analysis[i].getElementsByTagName('comparing')[0].firstChild.nodeValue;
+                var analysisUuid = analysis[i].getElementsByTagName('uuid')[1].firstChild.nodeValue;
+                var analysisData = self.state.analysisData.slice();
+                var newAnalysis = {
+                          loaded: true,
+                          found: true,
+                          uuid: analysisUuid,
+                          name: analysisName,
+                          status:''
+                        };
+                analysisData.push(newAnalysis);
+                self.setState({analysisData: analysisData});
+                
+                status(analysisUuid)
+                  .then(self.onStatusSuccess)
+                  .catch(self.onStatusFailure);
+              }
+            }
+
+        })// read CSV file and take data charts
+   
+    }
+   
+  }
+
+
+  onProjectFailure(response) {
     this.setState({
-      loaded: true,
-      found:  true,
-      uuid:   response.data.uuid,
-      status: response.data.status,
+      loaded: false,
+      found:  false,
     });
+  }
+
+
+
+  onStatusSuccess(response) {
+
+
+    // first, add status atribute at state analysis
+
+    var analysis = this.state.analysisData.slice();
+    for ( var i = 0; i < analysis.length; i++)
+    {
+      if ( analysis[i].uuid == response.data.uuid )
+      {
+        analysis[i]['status'] = response.data.status; 
+      }
+    }
 
     if (response.data.status.status === 'created') {
       queuePosition(this.state.uuid)
         .then(this.onQueueSuccess)
         .catch(this.onQueueFailure);
     }
-  }
+
+    // if status is finished create graph
+    if( response.data.status.status == 'finished' )
+    {
+      // take CSV for create chart
+      var self= this;
+      var uuid = response.data.uuid;
+      var status = response.data.status;
+
+    
+      
+      file(response.data.uuid, "report.csv")
+        .then(function(response)
+        {
+          // IDENTITY CHART
+          var analysis = self.state.analysisData.slice();
+          var sourceDataIdentity = self.state.identityChart.sourceData.slice();
+          var graphsIdentity = self.state.identityChart.graphs.slice();
+
+          // create data necessary data chart (sourceData, graphs and comparing names)
+          var CSVElements = CSVToArray(response.data, ",");
+          var uuidAnalysis = response.config.url.substring(42, 78);
+          var comparingName = '';
+          for ( var i = 0; i < analysis.length; i++)
+          {
+            if ( analysis[i].uuid == uuidAnalysis )
+            {
+              comparingName = analysis[i].name
+            }
+          }
+          
+
+          var dataChartIdentity = createIdentityDataChart(CSVElements, sourceDataIdentity, graphsIdentity, self.state.references, comparingName);
+            
+
+          var configIdentity = {
+            "type": "serial",
+            "titles": [
+              {
+                "text": "Identity Heatmap",
+                "size": 20
+              }
+            ],
+            "dataProvider": dataChartIdentity.sourceData,
+            "graphs": dataChartIdentity.graphs,
+            "precision": 1,
+            "valueAxes": [{
+              "stackType": "regular",
+              "axisAlpha": 0,
+              "gridAlpha": 0,
+              "position": "left",
+              "integersOnly": true
+            }],
+            "startDuration": 1,
+            "columnWidth": 1,
+            "categoryField": "Reference",
+            "categoryAxis": {
+              "categoryField": "Comparing",
+              "axisAlpha": 0,
+              "gridAlpha": 0,
+              "position": "left",
+              "gridPosition": "start",
+
+            },
+            "export": {
+              "enabled": true
+            }
+          };
+
+          var identityChart = {
+              sourceData: dataChartIdentity.sourceData,
+              graphs: dataChartIdentity.graphs,
+              data: configIdentity,
+              graph:false
+
+          };
+
+          self.setState({ references: dataChartIdentity.references ,
+                          identityChart: identityChart});
+
+
+          // REPEAT CHART
+
+          var sourceDataRepeat = self.state.repeatChart.sourceData.slice();
+          var graphsRepeat = self.state.repeatChart.graphs.slice();
+
+          // create data necessary data chart (sourceData, graphs and comparing names)
+          var datachartRepeat = createRepeatChart(CSVElements, sourceDataRepeat, graphsRepeat, self.state.references, comparingName);
+
+          var configRepeat = {
+            "type": "serial",
+            "dataProvider": datachartRepeat.sourceData,
+            "graphs": datachartRepeat.graphs,
+            "titles": [
+              {
+                "text": "Repeat Heatmap",
+                "size": 20
+              }
+            ],
+            "valueAxes": [{
+              "stackType": "regular",
+              "axisAlpha": 0,
+              "gridAlpha": 0,
+              "integersOnly": true,
+              "position": "left",
+            }],
+            "startDuration": 1,
+            "columnWidth": 1,
+            "categoryField": "Reference",
+            "categoryAxis": {
+              "categoryField": "Comparing",
+              "axisAlpha": 0,
+              "gridAlpha": 0,
+              "position": "left",
+              "gridPosition": "start",
+
+            },
+            "export": {
+              "enabled": true
+            }
+          };
+
+          var repeatChart = {
+              sourceData: datachartRepeat.sourceData,
+              graphs: datachartRepeat.graphs,
+              data: configRepeat,
+              graph:false
+
+          };
+
+          self.setState({ repeatChart: repeatChart});
+
+
+        })
+        .catch(this.onFileFailure);
+
+    }// end of if finished
+
+  }// end of funcion onStatusSuccess
 
   onStatusFailure(response) {
     this.setState({
@@ -130,16 +425,18 @@ class Analysis extends Base {
     this.setState({ queue: 'not found' });
   }
 
+
   render() {
     return (
       <div className="content">
-        <Loader loaded={this.state.loaded}>
-        {
-          this.state.found
-            ? <ShowStatus uuid={this.state.uuid} status={this.state.status} queue={this.state.queue} />
-            : <ShowNotFound uuid={this.props.params.uuid} />
+        
+        { this.state.found
+        ? <ShowProject project={this.state.project} analysisData={this.state.analysisData}
+        configIdentity={this.state.identityChart.config} graphIdentity={this.state.identityChart.graph}  
+        configRepeat={this.state.repeatChart.config} graphRepeat={this.state.repeatChart.graph} />
+        : <ShowNotFound uuid={this.state.uuid} />
         }
-        </Loader>
+          
       </div>
     );
   }
