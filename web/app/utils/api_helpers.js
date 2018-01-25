@@ -1,8 +1,12 @@
 import axios   from 'axios';
-import { api_url } from '../config/api_url';
+import { api_url, funprot_url } from '../config/api_url';
 
 function status(uuid) {
   return axios.get(`${api_url}/analysis/${uuid}`);
+}
+
+function statusMultiple(uuid) {
+  return axios.get(`${funprot_url}/analysis/${uuid}`);
 }
 
 function file(uuid, file) {
@@ -30,4 +34,4 @@ function sendAnalysis(json)
 	return axios.post(`${api_url}/analysis/`, json);
 }
 
-export { status, image, file, queueSize, queuePosition, sendAnalysis };
+export { status, image, file, queueSize, queuePosition, sendAnalysis, statusMultiple };
