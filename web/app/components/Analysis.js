@@ -74,9 +74,25 @@ const ShowNotFound = ({uuid}) => {
     </Alert>
   );
 }
+const HeatMap = ({ configIdentity, graphIdentity, configRepeat, graphRepeat }) => {
+  return(
+    <div>
+      { graphIdentity
+          ? <AmCharts.React options={configIdentity} style={{width: "100%", height: "500px"   }} />
+          : <ReactSpinner size={80} borderColor='#f2f0f0' borderTopColor='#e60000'>  </ReactSpinner>
+      }
+      { graphRepeat
+          ? <AmCharts.React options={configRepeat} style={{width: "100%", height: "500px"   }} />
+          : <ReactSpinner size={80} borderColor='#f2f0f0' borderTopColor='#e60000'>  </ReactSpinner>
+      }
+  
+    </div>
+  );
+}
 
 // if we find project then show analysis and graph
-const ShowProject = ({project, analysisData, configIdentity, graphIdentity, configRepeat, graphRepeat }) => {
+const ShowProject = ({project, analysisData, configIdentity, graphIdentity, configRepeat, graphRepeat, heatmaps }) => {
+
   return (
     <div>
       <h2> Project:  {project.uuid} </h2>
@@ -93,19 +109,18 @@ const ShowProject = ({project, analysisData, configIdentity, graphIdentity, conf
           )}
       </ul>
 
-      { graphIdentity
-            ? <AmCharts.React options={configIdentity} style={{width: "100%", height: "500px"   }} />
-            : <ReactSpinner size={80} borderColor='#f2f0f0' borderTopColor='#e60000'>  </ReactSpinner>
-      }
-      { graphRepeat
-            ? <AmCharts.React options={configRepeat} style={{width: "100%", height: "500px"   }} />
-            : <ReactSpinner size={80} borderColor='#f2f0f0' borderTopColor='#e60000'>  </ReactSpinner>
-      }
+
+        { heatmaps &&
+          <HeatMap configIdentity={configIdentity} graphIdentity={graphIdentity} configRepeat={configRepeat} graphRepeat={graphRepeat} />
+        }
+
     </div>
     
   );
 }
 ///
+
+
 
 
 class Analysis extends Base {
@@ -119,6 +134,7 @@ class Analysis extends Base {
       queue:  false,
       project: {},
       analysisData: [],
+      heatmaps: true,
       identityChart: {
         graphs:[],
         sourceData: [], 
@@ -140,6 +156,7 @@ class Analysis extends Base {
       'onStatusSuccess',
       'onStatusFailure',
       'onQueueSuccess',
+      'onFileFailure',
       'onQueueFailure'
     );
   }
@@ -153,12 +170,12 @@ class Analysis extends Base {
         .then(this.onProjectSuccess)
         .catch(this.onProjectFailure);
 
-
       // load heatmap
       setTimeout(
           function(){
               if ( this.state.identityChart.data != [] )
               {
+
                 var identityChart = this.state.identityChart;
                 identityChart.config = this.state.identityChart.data;
                 identityChart.graph = true;
@@ -190,6 +207,7 @@ class Analysis extends Base {
     if ( analysis.length != 0 )
     {
       this.setState({found: true});
+
       var projectNode = analysis[0].getElementsByTagName('project')[0];
       var projectReferenceFile  = projectNode.getElementsByTagName('reference')[0].firstChild.nodeValue;
       var projectUuid = projectNode.getElementsByTagName('uuid')[0].firstChild.nodeValue;
@@ -200,6 +218,7 @@ class Analysis extends Base {
                       };
 
       this.setState({project: project});
+
 
       var self = this;
 
@@ -233,7 +252,8 @@ class Analysis extends Base {
               }
             }
 
-        })// read CSV file and take data charts
+        
+        });// read CSV file and take data charts
    
     }
    
@@ -262,15 +282,17 @@ class Analysis extends Base {
         analysis[i]['status'] = response.data.status; 
       }
     }
-
     if (response.data.status.status === 'created') {
+      this.setState({heatmaps:false});
       queuePosition(this.state.uuid)
         .then(this.onQueueSuccess)
         .catch(this.onQueueFailure);
     }
-
+    if (response.data.status.status === 'started') {
+      this.setState({heatmaps:false});
+    }
     // if status is finished create graph
-    if( response.data.status.status == 'finished' )
+    if( response.data.status.status == 'finished' || response.data.status.status == 'failed')
     {
       // take CSV for create chart
       var self= this;
@@ -417,6 +439,10 @@ class Analysis extends Base {
     });
   }
 
+  onFileFailure(response){
+    this.setState({ heatmaps: false });
+  }
+
   onQueueSuccess(response) {
     this.setState({ queue: response.data.position });
   }
@@ -433,7 +459,7 @@ class Analysis extends Base {
         { this.state.found
         ? <ShowProject project={this.state.project} analysisData={this.state.analysisData}
         configIdentity={this.state.identityChart.config} graphIdentity={this.state.identityChart.graph}  
-        configRepeat={this.state.repeatChart.config} graphRepeat={this.state.repeatChart.graph} />
+        configRepeat={this.state.repeatChart.config} graphRepeat={this.state.repeatChart.graph} heatmaps={this.state.heatmaps} />
         : <ShowNotFound uuid={this.state.uuid} />
         }
           
