@@ -196,7 +196,6 @@ class Analysis extends Base {
 
 
   onProjectSuccess(response){
-    
     var parser = new DOMParser();
     var xmlDoc = parser.parseFromString(response.data,"text/xml");
     var analysis = xmlDoc.getElementsByTagName("analysis");
@@ -224,6 +223,7 @@ class Analysis extends Base {
 
       file(analysis[0].getElementsByTagName('uuid')[1].firstChild.nodeValue, "reference.fasta")
         .then(function(response){
+            console.log(response);
             var sequences = [];
             sequences = getReferences(response.data);
             if ( sequences != [] )
@@ -284,7 +284,7 @@ class Analysis extends Base {
     }
     if (response.data.status.status === 'created') {
       this.setState({heatmaps:false});
-      queuePosition(this.state.uuid)
+      queuePosition(response.data.uuid)
         .then(this.onQueueSuccess)
         .catch(this.onQueueFailure);
     }
