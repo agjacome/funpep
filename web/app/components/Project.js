@@ -102,15 +102,15 @@ const ShowProject = ({project, analysisData, configIdentity, graphIdentity, conf
       <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p><br/>
       <p><b>Reference file:</b>  <DownloadButton uuid={project.fileUuid} name='reference.fasta' span={project.referenceFile + '.fasta'} /></p>
       <p><b>Project analyses:</b></p>
-      <ul id="analysisList">
+      <ol className="list-group" id="analysisList">
           {analysisData.map((analysis) => 
-            <li class="col-md-12" key={analysis.uuid}>
+            <li className="list-group-item">
               <p><b>Analysis '<a target="_blank" href={'/status/' + analysis.uuid}> {analysis.uuid}  </a>'</b></p>
               <p><b>Status:</b>  <span className={analysis.status.status} > {analysis.status.status}  </span> </p>
               <p><b>Comparing File:</b>  <DownloadButton uuid={analysis.uuid} name='comparing.fasta' span={analysis.name + '.fasta'} /></p>
             </li>
           )}
-      </ul>
+      </ol>
 
 
         { heatmaps &&
