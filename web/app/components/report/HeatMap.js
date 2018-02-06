@@ -159,7 +159,7 @@ function createIdentityDataChart(CSVElements, charData, graphs, references, comp
   var graphs = [];
   for (var i = 0; i <= charData.length; i++) {
     graphs.push({
-      "balloonText": "<b>Indentity: [[Identity" + i + "]] </b></br>Comparing: [[ComparingName" + i + "]] </br> Reference: [[Reference]]",
+      "balloonText": "<b>Similarity: [[Identity" + i + "]]% </b></br>Analysis: [[ComparingName" + i + "]] </br> Reference protein: [[Reference]]",
       "fillAlphas": 1,
       "lineAlpha": 0.1,
       "type": "column",
@@ -220,7 +220,7 @@ function createRepeatChart(CSVElements, charData, graphs, references, comparingN
   var graphs = [];
   for (var i = 0; i <= charData.length; i++) {
     graphs.push({
-      "balloonText": "<b>Repeat: [[Repeat" + i + "]] </b></br>Comparing: [[ComparingName" + i + "]] </br> Reference: [[Reference]]",
+      "balloonText": "<b>Matches: [[Repeat" + i + "]] </b></br>Analysis: [[ComparingName" + i + "]] </br> Reference protein: [[Reference]]",
       "fillAlphas": 1,
       "lineAlpha": 0.1,
       "type": "column",

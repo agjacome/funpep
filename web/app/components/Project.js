@@ -70,22 +70,25 @@ function CSVToArray( strData, strDelimiter ){
 const ShowNotFound = ({uuid}) => {
   return (
     <Alert bsStyle="danger">
-      <strong>Analysis {uuid} not found</strong>
+      <strong>Project {uuid} not found</strong>
     </Alert>
   );
 }
 const HeatMap = ({ configIdentity, graphIdentity, configRepeat, graphRepeat }) => {
   return(
     <div>
+    <br/>
+    <p><b>Similarity percentage heatmap</b></p>
       { graphIdentity
           ? <AmCharts.React options={configIdentity} style={{width: "100%", height: "500px"   }} />
           : <ReactSpinner size={80} borderColor='#f2f0f0' borderTopColor='#e60000'>  </ReactSpinner>
       }
+      <br/><p><b>Alignment matches heatmap</b></p>
       { graphRepeat
           ? <AmCharts.React options={configRepeat} style={{width: "100%", height: "500px"   }} />
           : <ReactSpinner size={80} borderColor='#f2f0f0' borderTopColor='#e60000'>  </ReactSpinner>
       }
-  
+      <br/><br/>
     </div>
   );
 }
@@ -95,16 +98,16 @@ const ShowProject = ({project, analysisData, configIdentity, graphIdentity, conf
 
   return (
     <div>
-      <h2> Project:  {project.uuid} </h2>
-      <p><b>Reference File:</b>  <DownloadButton uuid={project.fileUuid} name='reference.fasta' span={project.referenceFile} /></p>
+      <h3>Project '{project.uuid}' </h3>
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p><br/>
+      <p><b>Reference file:</b>  <DownloadButton uuid={project.fileUuid} name='reference.fasta' span={project.referenceFile + '.fasta'} /></p>
+      <p><b>Project analyses:</b></p>
       <ul id="analysisList">
           {analysisData.map((analysis) => 
             <li class="col-md-12" key={analysis.uuid}>
-              <p className="titleAnalysis"> <b>Analysis: </b>
-                 <a target="_blank" href={'/report/' + analysis.uuid}> {analysis.uuid}  </a>
-              </p>
-              <p> <b>Status:</b>  <span className={analysis.status.status} > {analysis.status.status}  </span> </p>
-              <p> <b>Download Comparing File:</b>  <DownloadButton uuid={analysis.uuid} name='comparing.fasta' span={analysis.name} /></p>
+              <p><b>Analysis '<a target="_blank" href={'/status/' + analysis.uuid}> {analysis.uuid}  </a>'</b></p>
+              <p><b>Status:</b>  <span className={analysis.status.status} > {analysis.status.status}  </span> </p>
+              <p><b>Comparing File:</b>  <DownloadButton uuid={analysis.uuid} name='comparing.fasta' span={analysis.name + '.fasta'} /></p>
             </li>
           )}
       </ul>
@@ -208,7 +211,7 @@ class Analysis extends Base {
       this.setState({found: true});
 
       var projectNode = analysis[0].getElementsByTagName('project')[0];
-      var projectReferenceFile  = projectNode.getElementsByTagName('reference')[0].firstChild.nodeValue;
+      var projectReferenceFile  = projectNode.getElementsByTagName('reference')[0].firstChild.nodeValue;  
       var projectUuid = projectNode.getElementsByTagName('uuid')[0].firstChild.nodeValue;
       var project = {
                         uuid: projectUuid,
@@ -327,12 +330,6 @@ class Analysis extends Base {
 
           var configIdentity = {
             "type": "serial",
-            "titles": [
-              {
-                "text": "Identity Heatmap",
-                "size": 20
-              }
-            ],
             "dataProvider": dataChartIdentity.sourceData,
             "graphs": dataChartIdentity.graphs,
             "precision": 1,
@@ -383,12 +380,6 @@ class Analysis extends Base {
             "type": "serial",
             "dataProvider": datachartRepeat.sourceData,
             "graphs": datachartRepeat.graphs,
-            "titles": [
-              {
-                "text": "Repeat Heatmap",
-                "size": 20
-              }
-            ],
             "valueAxes": [{
               "stackType": "regular",
               "axisAlpha": 0,

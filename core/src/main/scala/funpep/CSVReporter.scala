@@ -59,17 +59,28 @@ final class CSVReporter[A] private (
     lazy val matLines = matrix.filterWithKey(
       (k, _) ⇒ findSequence(filtered, k).isJust
     ).toList.toIList
+   // LogInside.log(s"$matLines")
     lazy val csvLines = matLines traverse {
       case (h, (i, d)) ⇒ csvLine(i, (h, d), matrix)
     }
+   LogInside.log(s"$csvLines")
+   // val yy = csvLines.getOrElse(IList.empty).filter(_ != "")
+   // LogInside.log(s"$yy")
+
     csvLines.getOrElse(IList.empty).filter(_ != "")
   }
 
   def csvLine(lineIndex: Int, line: MatrixLine, matrix: Matrix): Maybe[String] = {
     lazy val lineHeader = line._1
     lazy val lineDists  = line._2.toIList.updated(lineIndex, -∞).take(referenceSize)//.filter(_ >= threshold)
-    LogInside.log(s"$lineHeader - $lineDists")
     if(!lineDists.empty) {
+      val mv = lineDists.maximum
+      val mi = lineDists.indexOf(mv.getOrElse(0.0))
+      val rf = indexedMatrix(matrix).lookup(mi.getOrElse(0)).getOrElse(("",NonEmptyList(0.0)))._1
+      val rfs = findSequence(reference, rf)
+      val cmp = findSequence(filtered, lineHeader)
+      //LogInside.log(s"$lineHeader - $mv $mi $rf ${cmp.getOrElse(reference.entries.head).header} ${rfs.getOrElse(reference.entries.head).header}")
+      LogInside.log(s""""${cmp.getOrElse(reference.entries.head).header}","${rfs.getOrElse(reference.entries.head).header}","$mv"""")
       for {
         maxValue ← lineDists.maximum.toMaybe
         maxIndex ← lineDists.indexOf(maxValue).toMaybe
@@ -87,6 +98,8 @@ final class CSVReporter[A] private (
     ==>>.fromList(matrix.toList map { case (h, (i, d)) ⇒ (i, (h, d)) })
 
   private def findSequence(fasta: Fasta[A], header: String): Maybe[Sequence[A]] = {
+    //val x = fasta.entries.toIList.find(_.header.split(" ")(0) startsWith header.replaceAll("\n",""))
+   // LogInside.log(s"$header : $x")
     fasta.entries.toIList.find(_.header.split(" ")(0) startsWith header.replaceAll("\n","")).toMaybe
   }
 
@@ -124,7 +137,7 @@ object CSVReporter {
     lazy val distances = sepBy1(double, horizontalWhitespace) <~ (eol | eoi)
 
     def fromString(str: String): ErrorMsg ∨ Matrix = {
-      LogInside.log(s"From string: $str")
+      //LogInside.log(s"From string: $str")
       matrix.parseOnly(str).either
     }
 

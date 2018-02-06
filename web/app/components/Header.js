@@ -10,14 +10,14 @@ const Header = () => {
       <Navbar staticTop>
         <Navbar.Header>
           <Navbar.Brand className="logo">
-            <IndexLink to={'/'}>funpep</IndexLink>
+            <IndexLink to={'/'}>Serpent</IndexLink>
           </Navbar.Brand>
           <Navbar.Toggle />
         </Navbar.Header>
         <Navbar.Collapse>
           <Nav pullRight>
-            <LinkContainer to={'/new'}><NavItem>New Analysis</NavItem></LinkContainer>
-            <LinkContainer to={'/status'}><NavItem>Check Status</NavItem></LinkContainer>
+            <LinkContainer to={'/new'}><NavItem>New Project</NavItem></LinkContainer>
+            <LinkContainer to={'/check'}><NavItem>Check Status</NavItem></LinkContainer>
             <LinkContainer to={'/help'}><NavItem>Help</NavItem></LinkContainer>
             <LinkContainer to={'/about'}><NavItem>About</NavItem></LinkContainer>
           </Nav>

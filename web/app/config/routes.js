@@ -8,7 +8,7 @@ import Help     from '../components/Help';
 import About    from '../components/About';
 import Report   from '../components/Report';
 import New      from '../components/New';
-import Analysis from '../components/Analysis';
+import Project  from '../components/Project';
 
 import { Route, IndexRoute } from 'react-router';
 
@@ -17,9 +17,9 @@ export default (
     <IndexRoute component={Home} />
 
     <Route path="/new" component={New} />
-    <Route path="/analysis/:uuid" component={Analysis} />
+    <Route path="/project/:uuid" component={Project} />
 
-    <Route path="/status"       component={Check} />
+    <Route path="/check"        component={Check} />
     <Route path="/status/:uuid" component={Status} />
     <Route path="/report/:uuid" component={Report} />
 

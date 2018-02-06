@@ -24,7 +24,7 @@ function ShowFirstFasta(fasta) {
 
 function ShowResults(result) {   
   var array = (<span />); 
-  var link = "analysis/"+result.result;
+  var link = "project/"+result.result;
   if(result.result && 0 != result.result.length){
     if(result.result == "error"){
     array = (
@@ -33,7 +33,7 @@ function ShowResults(result) {
     }else{
       array = (
         <span>Your new analysis has been created correctly, it is available in the following link: <a target="_blank" href={link} >
-              ${funpep_url}/{result.result}.</a><br/></span>
+              {funpep_url}/project/{result.result}</a><br/></span>
       );
       document.getElementById("button-input").onclick = function(e){e.preventDefault();location.href='new'}
       document.getElementById("button-input").value = "Clear form";
@@ -270,7 +270,7 @@ class New extends Base {
     return (
       <div className="content p-relative">
         <div id="spinner-div" className="d-none"><ReactSpinner size={130} borderColor='#dbdbdb' borderTopColor='#c0392b'>Example</ReactSpinner></div>
-        <h3>Upload a new analysis</h3>
+        <h3>Upload a new project</h3>
         <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
       
         <div className="row">
@@ -322,7 +322,7 @@ class New extends Base {
             <div className="col-lg-9"></div>
           </div>
           <div className="buttons">
-            <ButtonInput id="button-input" type="submit" value="New analysis"  disabled={!disabledButton}  onClick={this.submitForm} />
+            <ButtonInput id="button-input" type="submit" value="New project"  disabled={!disabledButton}  onClick={this.submitForm} />
           </div>          
             <ShowResults result={this.state.result} />            
         </div>

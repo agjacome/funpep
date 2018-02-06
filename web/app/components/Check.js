@@ -31,21 +31,21 @@ class Check extends Base {
   }
 
   handleSubmit() {
-    this.context.router.push('/analysis/' + this.state.uuid);
+    this.context.router.push('/project/' + this.state.uuid);
   }
 
   render() {
     return (
       <div className="content">
-        <h3>Check analysis status</h3>
+        <h3>Check project status</h3>
         <p>
-          You can check the status of an ongoing analysis process by providing
+          You can check the status of an ongoing project process by providing
           its unique identifier in the form of an <a target="_blank" href="https://en.wikipedia.org/wiki/Universally_unique_identifier">UUID</a>.
-          You should have received the Analysis ID upon correctly submitting it
+          You should have received the Project ID upon correctly submitting it
           into our system.
         </p>
         <form onSubmit={this.handleSubmit}>
-          <Input type="text" placeholder="Enter analysis UUID" ref="uuid" onChange={this.handleChange} bsStyle={this.validationState()} hasFeedback />
+          <Input type="text" placeholder="Enter project UUID" ref="uuid" onChange={this.handleChange} bsStyle={this.validationState()} hasFeedback />
           <div className="buttons">
             <ButtonInput type="submit" value="Check" disabled={!this.state.valid} />
           </div>

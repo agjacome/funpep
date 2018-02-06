@@ -58,7 +58,6 @@ const ShowStatus = ({uuid, status, report, tree}) => {
       </div>
       <br/> 
       <ReportTable products={report} /><br/> 
-      <HeatMap report={report} /><br/>
       <div className="buttons">
          <LinkContainer to={'/status/' + uuid}><Button>Back</Button></LinkContainer>
       </div>
@@ -151,11 +150,10 @@ class Report extends Base {
     var headers = ["comparing","reference","similarity"];
     for(var i=1; i<lines.length-1; i++){
       var obj = {};
-      var currentline = lines[i].split(",");
-      
-      for(var j=0; j<headers.length;j++){
-        obj[headers[j]] = currentline[j].substring(1,currentline[j].length-1);
-      }
+      var currentline = lines[i].split(',"');
+      obj[headers[0]] = currentline[0].substring(1,currentline[0].length-1);
+      obj[headers[1]] = currentline[1].substring(0,currentline[1].length-1);      
+      obj[headers[2]] = currentline[2].substring(0,currentline[2].length-1)+"%";      
       result.push(obj);
     }
     
