@@ -21,7 +21,6 @@ function ShowFirstFasta(fasta) {
   );  
   return (<div>{array}</div>);
 }
-
 function ShowResults(result) {   
   var array = (<span />); 
   var link = "project/"+result.result;
@@ -41,7 +40,6 @@ function ShowResults(result) {
   }
   return (<div>{array}</div>);
 }
-          
 function parseFasta(formatFasta){
   var state = false;
   try {
@@ -51,6 +49,33 @@ function parseFasta(formatFasta){
     parser.on('data', function(data) {});
     state = true;
     parser.write(fastaData);
+
+    var regExp = new RegExp(('^>.*'),"gim");
+    var matches = null;
+    var i = 0;
+    var sequences = [];
+    while (matches = regExp.exec( formatFasta )){
+      sequences[i] = matches[0];
+      i++;
+    }
+    var j = 0;
+    var l = 0;
+    var repeat = false;
+    var repeatArray = [];
+    while ( j<sequences.length && !repeat )
+    {
+      for (var k = 0; k<repeatArray.length; k++)
+      {
+        if (repeatArray[k] == sequences[j])
+        {
+          repeat = true;
+          state = false;
+        }
+      }
+      repeatArray[l] = sequences[j];
+      l++;
+      j++;
+    }
     parser.end();
   }
   catch(err) {
