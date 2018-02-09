@@ -1,7 +1,7 @@
 {
-  "name": "funpep-web",
+  "name": "serpent-web",
   "version": "0.1.0",
-  "description": "Funpep web interface over funpep-server exposed API",
+  "description": "Serpent web interface over serpent-server exposed API",
   "license": "MIT",
   "author": "Alberto G. Jácome <agjacome@esei.uvigo.es> (https://github.com/agjacome)",
   "contributors": [

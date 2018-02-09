@@ -105,7 +105,7 @@ const ShowProject = ({project, analysisData, configIdentity, graphIdentity, conf
       <ol className="list-group" id="analysisList">
           {analysisData.map((analysis) => 
             <li className="list-group-item">
-              <p><b>Analysis '<a target="_blank" href={'/status/' + analysis.uuid}> {analysis.uuid}  </a>'</b></p>
+              <p><b>Analysis '<a target="_blank" href={'/status/' + analysis.uuid}>{analysis.uuid}</a>'</b></p>
               <p><b>Status:</b>  <span className={analysis.status.status} > {analysis.status.status}  </span> </p>
               <p><b>Comparing File:</b>  <DownloadButton uuid={analysis.uuid} name='comparing.fasta' span={analysis.name + '.fasta'} /></p>
             </li>

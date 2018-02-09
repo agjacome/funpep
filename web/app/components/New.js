@@ -7,7 +7,7 @@ import { sendAnalysis } from '../utils/api_helpers';
 import { Input, ButtonInput } from 'react-bootstrap';
 import Dropzone from 'react-dropzone';
 import ReactSpinner from 'reactjs-spinner';
-import { funpep_url, funprot_url } from '../config/api_url'
+import { serpent_url, projects_url } from '../config/api_url'
 
 function ShowFirstFasta(fasta) {
   const array = (
@@ -32,7 +32,7 @@ function ShowResults(result) {
     }else{
       array = (
         <span>Your new analysis has been created correctly, it is available in the following link: <a target="_blank" href={link} >
-              {funpep_url}/project/{result.result}</a><br/></span>
+              {serpent_url}/project/{result.result}</a><br/></span>
       );
       document.getElementById("button-input").onclick = function(e){e.preventDefault();location.href='new'}
       document.getElementById("button-input").value = "Clear form";
@@ -271,7 +271,7 @@ class New extends Base {
       })     
       xml  = xml+"</analyses></loadAnalysis>";
       
-      axios.post(`${funprot_url}/analysis/`, xml, {
+      axios.post(`${projects_url}/analysis/`, xml, {
         headers: {
             'Content-Type': 'application/xml'
         }}).then(function(response){

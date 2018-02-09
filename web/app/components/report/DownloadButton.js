@@ -13,7 +13,8 @@ class DownloadButton extends Base {
     );
   }    
   
-  handleClick() {
+  handleClick(e) {
+   e.preventDefault();
    file(this.props.uuid, this.props.name)
     .then(this.onFileSuccess)
     .catch(this.onFileFailure);     

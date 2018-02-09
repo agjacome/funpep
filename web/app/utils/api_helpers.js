@@ -1,12 +1,12 @@
 import axios   from 'axios';
-import { api_url, funprot_url } from '../config/api_url';
+import { api_url, projects_url } from '../config/api_url';
 
 function status(uuid) {
   return axios.get(`${api_url}/analysis/${uuid}`);
 }
 
 function statusMultiple(uuid) {
-  return axios.get(`${funprot_url}/analysis/${uuid}`);
+  return axios.get(`${projects_url}/analysis/${uuid}`);
 }
 
 function file(uuid, file) {

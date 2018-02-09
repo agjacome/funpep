@@ -1,5 +1,5 @@
-const api_url = 'http://sing-group.org/funpep/api';
-const funprot_url = 'http://sing-group.org/funpep/funprot/api';
-const funpep_url = 'http://sing-group.org/funpep';
+const api_url = 'http://sing-group.org/serpent/api';
+const projects_url = 'http://sing-group.org/serpent/funprot/api';
+const serpent_url = 'http://sing-group.org/serpent';
 
-export { api_url, funprot_url, funpep_url };
+export { api_url, projects_url, serpent_url };

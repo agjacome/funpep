@@ -43,7 +43,7 @@ object FunpepServer {
     }
 
   private def parseArgs(args: Array[String]): ValidationNel[ErrorMsg, Options] =
-    execParser(args, "funpep-server", info(Options.options))
+    execParser(args, "serpent-server", info(Options.options))
 
   private def analyzerQueue: KleisliP[Options, AnalyzerQueue[AminoAcid]] =
     KleisliP { options ⇒

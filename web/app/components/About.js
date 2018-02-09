@@ -7,9 +7,9 @@ const About = () => {
       <div className="row grey-container">          
             Please send comments concerning:
             <ul>
-                <li>General development and scientific contents to Dr. Anália Lourenço(<a href="mailto:analia@uvigo.es?cc=borja.sanchez@csic.es&amp;subject=[Funpep]" itemprop="email">analia@uvigo.es</a>) and Dr. Borja Sánchez (<a href="mailto:borja.sanchez@csic.es?cc=analia@uvigo.es&amp;subject=[Funpep]" itemprop="email">borja.sanchez@csic.es</a>)
+                <li>General development and scientific contents to Dr. Anália Lourenço(<a href="mailto:analia@uvigo.es?cc=borja.sanchez@csic.es&amp;subject=[Serpent]" itemprop="email">analia@uvigo.es</a>) and Dr. Borja Sánchez (<a href="mailto:borja.sanchez@csic.es?cc=analia@uvigo.es&amp;subject=[Serpent]" itemprop="email">borja.sanchez@csic.es</a>)
                 </li>
-                <li>Computing and user interfaces to core developers Aitor Blanco Míguez (<a href="mailto:aiblanco@uvigo.es&amp;subject=[Funpep]" itemprop="email">aiblanco@uvigo.es</a>) and Alberto Gutierrez Jácome (<a href="mailto:agjacome@esei.uvigo.es&amp;subject=[Funpep]" itemprop="email">agjacome@esei.uvigo.es</a>)
+                <li>Computing and user interfaces to core developers Aitor Blanco Míguez (<a href="mailto:aiblanco@uvigo.es&amp;subject=[Serpent]" itemprop="email">aiblanco@uvigo.es</a>) and Alberto Gutierrez Jácome (<a href="mailto:agjacome@esei.uvigo.es&amp;subject=[Serpent]" itemprop="email">agjacome@esei.uvigo.es</a>)
                 </li>
             </ul>
         </div>
