@@ -102,15 +102,15 @@ const ShowProject = ({project, analysisData, configIdentity, graphIdentity, conf
       <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p><br/>
       <p><b>Reference file:</b>  <DownloadButton uuid={project.fileUuid} name='reference.fasta' span={project.referenceFile + '.fasta'} /></p>
       <p><b>Project analyses:</b></p>
-      <ol className="list-group" id="analysisList">
+      <ul className="list-group" id="analysisList">
           {analysisData.map((analysis) => 
-            <li className="list-group-item">
+            <li className="list-group-item" key={analysis.uuid}>
               <p><b>Analysis '<a target="_blank" href={'/status/' + analysis.uuid}>{analysis.uuid}</a>'</b></p>
               <p><b>Status:</b>  <span className={analysis.status.status} > {analysis.status.status}  </span> </p>
               <p><b>Comparing File:</b>  <DownloadButton uuid={analysis.uuid} name='comparing.fasta' span={analysis.name + '.fasta'} /></p>
             </li>
           )}
-      </ol>
+      </ul>
 
 
         { heatmaps &&
@@ -223,10 +223,9 @@ class Analysis extends Base {
 
 
       var self = this;
-
+      
       file(analysis[0].getElementsByTagName('uuid')[1].firstChild.nodeValue, "reference.fasta")
         .then(function(response){
-            console.log(response);
             var sequences = [];
             sequences = getReferences(response.data);
             if ( sequences != [] )
@@ -303,18 +302,18 @@ class Analysis extends Base {
       var status = response.data.status;
 
     
-      
       file(response.data.uuid, "report.csv")
         .then(function(response)
         {
           // IDENTITY CHART
           var analysis = self.state.analysisData.slice();
+        
           var sourceDataIdentity = self.state.identityChart.sourceData.slice();
           var graphsIdentity = self.state.identityChart.graphs.slice();
 
           // create data necessary data chart (sourceData, graphs and comparing names)
           var CSVElements = CSVToArray(response.data, ",");
-          var uuidAnalysis = response.config.url.substring(42, 78);
+          var uuidAnalysis = response.config.url.split("/")[response.config.url.split("/").length-2];
           var comparingName = '';
           for ( var i = 0; i < analysis.length; i++)
           {

@@ -186,7 +186,6 @@ function createRepeatChart(CSVElements, charData, graphs, references, comparingN
   var uniqueCSVReferences = [];
   var uniqueReferences = [];
   var cont = 0;
-  
   if ( charData.length == 0 )
   {
     for ( var i = 0; i < references.length; i++)
